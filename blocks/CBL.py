@@ -3,7 +3,7 @@ import numpy  as np
 
 class CBL(tf.keras.Model):
 
-   def __init__(self,filters=32,kernel_size=3,stride=2,padding='valid',**kwargs):
+   def __init__(self,filters=32,kernel_size=3,strides=2,padding='valid',**kwargs):
 
       #initialization
       super(CBL,self).__init__(**kwargs)
@@ -16,7 +16,7 @@ class CBL(tf.keras.Model):
       self.output_leaky_relu = tf.keras.layers.LeakyReLU()
       
 
-   def Call(self,inputs):
+   def call(self,inputs):
 
       """
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
