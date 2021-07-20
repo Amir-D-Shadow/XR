@@ -7,23 +7,28 @@ class res_unit(tf.keras.Model):
 
       """
       block_info -- dictionary containing blocks' hyperparameters (filters,kernel_size,strides,padding)
-      """
 
-      #extract keys
-      info_keys = []
+      Module Graph:
 
-      for i in block_info.keys():
-
-         info_keys.append(i)
+      ------ CBM_1 ------ CBM_2 ------ Add
+         |                              |
+         |                              |
+         |                              |
+         --------------------------------
 
       
+      """
+
+      #initialization
+      super(res_unit,self).__init__(**kwargs)
+      
       #1st CBM block
-      filters,kernel_size,strides,padding = block_info[info_keys[0]]
+      filters,kernel_size,strides,padding = block_info["CBM_1"]
       
       self.CBM_1 = CBM(filters,kernel_size,strides,padding)
 
       #2nd CBM block
-      filters,kernel_size,strides,padding = block_info[info_keys[0]]
+      filters,kernel_size,strides,padding = block_info["CBM_2"]
 
       self.CBM_2 = CBM(filters,kernel_size,strides,padding)
 

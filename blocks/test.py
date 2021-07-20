@@ -46,3 +46,9 @@ if __name__ == "__main__":
    
    func3(dict_test)
 
+   list_sample = []
+
+   for i in range(9):
+
+      list_sample.append(f"sample_{i}")
+
