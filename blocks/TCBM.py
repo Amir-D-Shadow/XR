@@ -33,7 +33,7 @@ class TCBM(tf.keras.Model):
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
       """
 
-      #Convolution 2D layer
+      #Transpose Convolution 2D layer
       conv2D_transpose_x = self.conv2D_transpose_x(inputs)
 
       #Batch Normalization layer
