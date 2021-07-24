@@ -67,7 +67,7 @@ class CSPX(tf.keras.Model):
       self.CBL_4 = CBL(filters,kernel_size,strides,padding)
 
       #BN
-      self.BN_x = tf.keras.layers.BatchNormalization(axis=3)
+      self.BN_x = tf.keras.layers.BatchNormalization(axis=-1)
 
       #leaky relu
       self.leaky_relu_x = tf.keras.layers.LeakyReLU()
@@ -106,7 +106,7 @@ class CSPX(tf.keras.Model):
       CBL_4 = self.CBL_4(CBL_1)
 
       #Concat
-      mid_concat = tf.keras.layers.concatenate(inputs=[CBL_3,CBL_4],axis=3)
+      mid_concat = tf.keras.layers.concatenate(inputs=[CBL_3,CBL_4],axis=-1)
 
       #Batch Normalization
       BN_x = self.BN_x(mid_concat)
@@ -174,7 +174,7 @@ class CSPX_Neck(tf.keras.Model):
       self.conv2D_2 = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding)
 
       #Batch Normalization
-      self.BN_x = tf.keras.layers.BatchNormalization(axis=3)
+      self.BN_x = tf.keras.layers.BatchNormalization(axis=-1)
       
       #leaky relu
       self.leaky_relu_x = tf.keras.layers.LeakyReLU()
@@ -206,7 +206,7 @@ class CSPX_Neck(tf.keras.Model):
       conv2D_2 = self.conv2D_2(inputs)
 
       #concat
-      mid_concat = tf.keras.layers.concatenate(inputs=[conv2D_1,conv2D_2],axis=3)
+      mid_concat = tf.keras.layers.concatenate(inputs=[conv2D_1,conv2D_2],axis=-1)
 
       #BN_x
       BN_x = self.BN_x(mid_concat)

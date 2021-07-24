@@ -21,7 +21,7 @@ class CBM(tf.keras.Model):
       #define layers
       self.conv2D_x = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding)
 
-      self.BN_x = tf.keras.layers.BatchNormalization(axis=3)
+      self.BN_x = tf.keras.layers.BatchNormalization(axis=-1)
 
       self.output_Mish = tf.keras.layers.Lambda(Mish)
 

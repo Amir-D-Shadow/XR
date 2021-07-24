@@ -31,6 +31,6 @@ class SPP(tf.keras.Model):
       maxpool_13x13 = self.maxpool_13x13(inputs)
 
       #concatenate
-      output_concat = tf.keras.layers.concatenate(inputs=[maxpool_5x5,maxpool_9x9,maxpool_13x13,inputs],axis=3)
+      output_concat = tf.keras.layers.concatenate(inputs=[maxpool_5x5,maxpool_9x9,maxpool_13x13,inputs],axis=-1)
 
       return output_concat
