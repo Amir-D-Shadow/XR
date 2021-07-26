@@ -105,23 +105,14 @@ def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,
    #get center info
    dataset["x_center"] = (dataset["xmin"] + dataset["xmax"])/2
    dataset["y_center"] = (dataset["ymin"] + dataset["ymax"])/2
-   """
+
    #calibrate bbox pos
-   for i in range(m):
+   dataset["xmin"] = dataset["xmin"] + (640 - dataset["width"] )//2
+   dataset["xmax"] = dataset["xmax"] + (640 - dataset["width"] )//2
 
-      #image shape
-      img_x = dataset.iloc[i,1]
-      img_y = dataset.iloc[i,2]
+   dataset["ymin"] = dataset["ymin"] + (640 - dataset["height"] )//2
+   dataset["ymax"] = dataset["ymax"] + (640 - dataset["height"] )//2
 
-      #calibrate
-      padding_x = int((input_shape[0]-img_x)/2)
-      padding_y = int((input_shape[1]-img_y)/2)
-
-      dataset.iloc[i,4] = dataset.iloc[i,4] + padding_x
-      dataset.iloc[i,5] = dataset.iloc[i,5] + padding_y
-      dataset.iloc[i,6] = dataset.iloc[i,6] + padding_x
-      dataset.iloc[i,7] = dataset.iloc[i,7] + padding_y
-   """
    #set up
    prev_name = "#"
    pos_format_size = len(pos_info_format)
