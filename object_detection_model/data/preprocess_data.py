@@ -105,7 +105,7 @@ def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,
    #get center info
    dataset["x_center"] = (dataset["xmin"] + dataset["xmax"])/2
    dataset["y_center"] = (dataset["ymin"] + dataset["ymax"])/2
-
+   """
    #calibrate bbox pos
    for i in range(m):
 
@@ -121,7 +121,7 @@ def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,
       dataset.iloc[i,5] = dataset.iloc[i,5] + padding_y
       dataset.iloc[i,6] = dataset.iloc[i,6] + padding_x
       dataset.iloc[i,7] = dataset.iloc[i,7] + padding_y
-
+   """
    #set up
    prev_name = "#"
    pos_format_size = len(pos_info_format)
@@ -135,7 +135,7 @@ def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,
       if curr_name == prev_name:
 
          #update pos info
-         update_pos_info(pos_info,(dataset.iloc[i,8],dataset.iloc[i,9]),dataset.iloc[i,4:8].to_numpy().reshape(1,4),class_map[dataset.iloc[i,3]],anchors)
+         update_pos_info(pos_info,dataset.iloc[i,8].item(),dataset.iloc[i,9].item(),dataset.iloc[i,4].item(),dataset.iloc[i,5].item(),dataset.iloc[i,6].item(),dataset.iloc[i,7].item(),class_map[dataset.iloc[i,3]],anchors,image_shape=input_shape,bbox_type=bbox_type,feature_size=85)
       
       elif curr_name != prev_name and prev_name != "#":
 
@@ -155,7 +155,7 @@ def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,
          pos_info = [np.zeros(pos_info_format[0]),np.zeros(pos_info_format[1]),np.zeros(pos_info_format[2])]
 
          #update pos info
-         update_pos_info(pos_info,(dataset.iloc[i,8],dataset.iloc[i,9]),dataset.iloc[i,4:8].to_numpy().reshape(1,4),class_map[dataset.iloc[i,3]],anchors)
+         update_pos_info(pos_info,dataset.iloc[i,8].item(),dataset.iloc[i,9].item(),dataset.iloc[i,4].item(),dataset.iloc[i,5].item(),dataset.iloc[i,6].item(),dataset.iloc[i,7].item(),class_map[dataset.iloc[i,3]],anchors,image_shape=input_shape,bbox_type=bbox_type,feature_size=85)
 
       elif prev_name == "#":
 
@@ -163,13 +163,26 @@ def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,
          pos_info = [np.zeros(pos_info_format[0]),np.zeros(pos_info_format[1]),np.zeros(pos_info_format[2])]
 
          #update pos info
-         update_pos_info(pos_info,(dataset.iloc[i,8],dataset.iloc[i,9]),dataset.iloc[i,4:8].to_numpy().reshape(1,4),class_map[dataset.iloc[i,3]],anchors)
+         update_pos_info(pos_info,dataset.iloc[i,8].item(),dataset.iloc[i,9].item(),dataset.iloc[i,4].item(),dataset.iloc[i,5].item(),dataset.iloc[i,6].item(),dataset.iloc[i,7].item(),class_map[dataset.iloc[i,3]],anchors,image_shape=input_shape,bbox_type=bbox_type,feature_size=85)
 
       #update prev_name
       prev_name = curr_name
 
-@jit(nopython=True)
-def update_pos_info(pos_info,center_info,obj_pos,class_index,anchors,image_shape = (640,640),bbox_type = 3,feature_size = 85):
+   #save last obj
+   for q in range(pos_format_size):
+   
+      h_size = pos_info_format[q][0]
+      w_size = pos_info_format[q][1]
+      
+      with open(f"{save_path}/{curr_name}_{h_size}x{w_size}.txt","w") as file:
+
+         file.write(json.dumps((pos_info[q]).tolist()))
+
+         file.close()
+
+
+#@jit(nopython=True)
+def update_pos_info(pos_info,center_x,center_y,xmin,ymin,xmax,ymax,class_index,anchors,image_shape = (640,640),bbox_type = 3,feature_size = 85):
 
    """
    center_info -- (x,y)
@@ -178,13 +191,10 @@ def update_pos_info(pos_info,center_info,obj_pos,class_index,anchors,image_shape
    anchors -- numpy.ndarray (K,2)
    image_shape -- (x,y)
    """
-   #center_x center y
-   center_x = center_info[0]
-   center_y = center_info[1]
    
    #object bbox h w
-   bbox_h = obj_pos[0,3] - obj_pos[0,1]
-   bbox_w = obj_pos[0,2] - obj_pos[0,0]
+   bbox_h = xmax - xmin
+   bbox_w = ymax - ymin
    
    #find bext anchor index
    max_index = 0
@@ -220,20 +230,6 @@ def update_pos_info(pos_info,center_info,obj_pos,class_index,anchors,image_shape
    sub_class_index = max_index % type_size
 
    #update info (prob,xmin,ymin,xmax,ymax,class)
-   feature_vector = np.zeros(1,255)
-
-   #prob
-   feature_vector[0,0] = 1
-
-   #xmin,ymin,xmax,ymax
-   feature_vactor[0,1] = obj_pos[0,0]
-   feature_vactor[0,2] = obj_pos[0,1]
-   feature_vactor[0,3] = obj_pos[0,2]
-   feature_vactor[0,4] = obj_pos[0,3]
-
-   #class
-   feature_vactor[0,(class_index+5)] = 1
-
    #feature mapping
    feature_per_image_pixel_x = pos_info[best_anchor_index].shape[0] / image_shape[0]
    feature_per_image_pixel_y = pos_info[best_anchor_index].shape[1] / image_shape[1]
@@ -241,7 +237,19 @@ def update_pos_info(pos_info,center_info,obj_pos,class_index,anchors,image_shape
    target_x = np.int64(center_x * feature_per_image_pixel_x).item()
    target_y = np.int64(center_y * feature_per_image_pixel_y).item()
 
-   (pos_info[best_anchor_index])[target_y,target_x] = feature_vector
+   #prob
+   (pos_info[best_anchor_index])[target_y,target_x,0] = 1
+
+   #xmin,ymin,xmax,ymax
+   (pos_info[best_anchor_index])[target_y,target_x,1] = xmin
+   (pos_info[best_anchor_index])[target_y,target_x,2] = ymin
+   (pos_info[best_anchor_index])[target_y,target_x,3] = xmax
+   (pos_info[best_anchor_index])[target_y,target_x,4] = ymax
+
+   #class
+   (pos_info[best_anchor_index])[target_y,target_x,(class_index+5)] = 1
+
+   
    
 
 if __name__ == "__main__":
@@ -274,5 +282,6 @@ if __name__ == "__main__":
    """
    file = open(f"{path}/data/anchors.txt")
    anchors = json.load(file)
+   file.close()
    
    preprocess_y_true(f"{path}/valid_set.csv",f"{path}/y_true",np.array(anchors),class_map)
