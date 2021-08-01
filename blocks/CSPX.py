@@ -2,6 +2,7 @@ import tensorflow as tf
 from CBM import CBM
 from CBL import CBL
 from RES_UNIT import res_unit
+from SPP import SPP
 
 #Backbone CSPX
 class CSPX(tf.keras.Model):
@@ -166,12 +167,12 @@ class CSPX_Neck(tf.keras.Model):
       #Conv2D_1
       filters,kernel_size,strides,padding = NECK_info["conv2D_1"]
       
-      self.conv2D_1 = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding)
+      self.conv2D_1 = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding,data_format="channels_last")
 
       #conv2D_2
       filters,kernel_size,strides,padding = NECK_info["conv2D_2"]
 
-      self.conv2D_2 = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding)
+      self.conv2D_2 = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding,data_format="channels_last")
 
       #Batch Normalization
       self.BN_x = tf.keras.layers.BatchNormalization(axis=-1)
@@ -220,8 +221,106 @@ class CSPX_Neck(tf.keras.Model):
       return output_CBM
 
 
+#revised CSP
+class rCSP(tf.keras.Model):
+
+
+   def __init__(self,rCSP_info,**kwargs):
+
+      """
+      rCSP_info -- dictionary containing information:  CBL info 
+
+                     - hpara: (filters,kernel_size,strides,padding)
+
+                     
+      Module Graph:
+      
+                   ------- CBL_2 --- CBL_3 --- CBL_4 --- SPP_1 --- CBL_5 -----
+                   |                                                         |
+                   |                                                         |______
+         CBL_1  ---|                                                          ______  Concat --- CBL_7
+                   |                                                         |
+                   |                                                         |
+                   --------------------------- CBL_6 -------------------------
+         
+      """
+      #initialization
+      super(rCSP,self).__init__(**kwargs)
+
+      #CBL_1
+      filters,kernel_size,strides,padding = rCSP_info["CBL_1"]
+      
+      self.CBL_1 = CBL(filters,kernel_size,strides,padding)
+      
+      #CBL_2
+      filters,kernel_size,strides,padding = rCSP_info["CBL_2"]
+
+      self.CBL_2 = CBL(filters,kernel_size,strides,padding)
+
+      #CBL_3
+      filters,kernel_size,strides,padding = rCSP_info["CBL_3"]
+
+      self.CBL_3 = CBL(filters,kernel_size,strides,padding)
+
+      #CBL_4
+      filters,kernel_size,strides,padding = rCSP_info["CBL_4"]
+
+      self.CBL_4 = CBL(filters,kernel_size,strides,padding)     
+
+      #SPP
+      self.SPP_1 = SPP()
+
+      #CBL_5
+      filters,kernel_size,strides,padding = rCSP_info["CBL_5"]
+
+      self.CBL_5 = CBL(filters,kernel_size,strides,padding)
+
+      #CBL_6
+      filters,kernel_size,strides,padding = rCSP_info["CBL_6"]
+
+      self.CBL_6 = CBL(filters,kernel_size,strides,padding)
+
+      #CBL_7
+      filters,kernel_size,strides,padding = rCSP_info["CBL_7"]
+
+      self.CBL_7 = CBL(filters,kernel_size,strides,padding)
+      
+   def call(self,inputs):
+
+      """
+      input -- tensorflow layer with shape (m,n_H,n_W,n_C)
+      """
+
+      #CBL_1
+      CBL_1 = self.CBL_1(inputs)
+
+      #CBL_2
+      CBL_2 = self.CBL_2(CBL_1)
+
+      #CBL_3
+      CBL_3 = self.CBL_3(CBL_2)
+
+      #CBL_4
+      CBL_4 = self.CBL_4(CBL_3)
+
+      #SPP_1
+      SPP_1 = self.SPP_1(CBL_4)
+
+      #CBL_5
+      CBL_5 = self.CBL_5(SPP_1)
+
+      #CBL_6
+      CBL_6 = self.CBL_6(CBL_1)
+
+      #concat
+      mid_concat = tf.keras.layers.concatenate(inputs=[CBL_6,CBL_5],axis=-1)
+
+      #CBL_7
+      output_CBL_7 = self.CBL_7(mid_concat)
+
+      
+      return output_CBL_7
 
 
 
-
-
+      
