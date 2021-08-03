@@ -406,7 +406,7 @@ class alpha_model(tf.keras.Model):
       #concat CBL_prob_small -- CBL_left_small -- CBL_center_small -- CBL_class_small  , out: 80 x 80 x 85
 
       #output small
-      self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_small")
+      self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",activation="swish",name="output_small")
 
       #----------------------------------------------------------------
 
@@ -452,7 +452,7 @@ class alpha_model(tf.keras.Model):
       #concat CBL_prob_medium -- CBL_left_medium -- CBL_center_medium -- CBL_class_medium  , out: 40 x 40 x 85
       
       #output medium
-      self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_medium")
+      self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",activation="swish",name="output_medium")
 
       #----------------------------------------------------------------
 
@@ -498,7 +498,7 @@ class alpha_model(tf.keras.Model):
       #concat CBL_prob_large -- CBL_left_large -- CBL_center_large -- CBL_class_large  , out: 20 x 20 x 85
       
       #output medium
-      self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_large")
+      self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",activation="swish",name="output_large")
 
       #----------------------------------------------------------------
       
