@@ -390,14 +390,14 @@ class alpha_model(tf.keras.Model):
       #decouple head -- small object , in : 80 x 80 x 256  out: 80 x 80 x (1 + 2 + 2 + 80)
 
       #reg
-      self.CBL_reg_small  = CBL(256,3,1,"same")
+      self.TCBL_reg_small  = TCBL(256,1,1,"valid")
 
       self.CBL_left_small = CBL(2,3,1,"same")
 
       self.CBL_center_small = CBL(2,3,1,"same")
 
       #class + prob
-      self.CBL_clsp_small  = CBL(256,3,1,"same")
+      self.TCBL_clsp_small  = TCBL(256,1,1,"valid")
 
       self.CBL_prob_small = CBL(1,3,1,"same")
 
@@ -406,7 +406,7 @@ class alpha_model(tf.keras.Model):
       #concat CBL_prob_small -- CBL_left_small -- CBL_center_small -- CBL_class_small  , out: 80 x 80 x 85
 
       #output small
-      self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",activation="swish",name="output_small")
+      self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_small")
 
       #----------------------------------------------------------------
 
@@ -452,7 +452,7 @@ class alpha_model(tf.keras.Model):
       #concat CBL_prob_medium -- CBL_left_medium -- CBL_center_medium -- CBL_class_medium  , out: 40 x 40 x 85
       
       #output medium
-      self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",activation="swish",name="output_medium")
+      self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_medium")
 
       #----------------------------------------------------------------
 
@@ -498,7 +498,7 @@ class alpha_model(tf.keras.Model):
       #concat CBL_prob_large -- CBL_left_large -- CBL_center_large -- CBL_class_large  , out: 20 x 20 x 85
       
       #output medium
-      self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",activation="swish",name="output_large")
+      self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_large")
 
       #----------------------------------------------------------------
       
@@ -576,18 +576,18 @@ class alpha_model(tf.keras.Model):
       #decouple head -- small object
 
       #reg -- small
-      CBL_reg_small = self.CBL_reg_small(rCSP3)
+      TCBL_reg_small = self.TCBL_reg_small(rCSP3)
 
-      CBL_left_small = self.CBL_left_small(CBL_reg_small)
+      CBL_left_small = self.CBL_left_small(TCBL_reg_small)
 
-      CBL_center_small = self.CBL_center_small(CBL_reg_small)
+      CBL_center_small = self.CBL_center_small(TCBL_reg_small)
 
       #class + prob -- small
-      CBL_clsp_small = self.CBL_clsp_small(rCSP3)
+      TCBL_clsp_small = self.TCBL_clsp_small(rCSP3)
 
-      CBL_prob_small = self.CBL_prob_small(CBL_clsp_small)
+      CBL_prob_small = self.CBL_prob_small(TCBL_clsp_small)
 
-      CBL_class_small = self.CBL_class_small(CBL_clsp_small)
+      CBL_class_small = self.CBL_class_small(TCBL_clsp_small)
 
       #concat CBL_prob_small -- CBL_left_small -- CBL_center_small -- CBL_class_small  , out: 80 x 80 x 85
 
