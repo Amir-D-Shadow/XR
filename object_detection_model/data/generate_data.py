@@ -9,7 +9,7 @@ import preprocess_data
 import time
 
 #generator
-def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),standard_scale=(8000,50000)):
+def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),standard_scale=(19360,66930)):
 
    """
    #img_shape -- (height,width)
@@ -44,7 +44,7 @@ def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),st
       img_data = get_image_data(name_list,img_path,img_shape)
 
       #get y_true data -- tuple (np.array,np.array,np.array)
-      label = get_y_true(name_list,img_info,class_info)
+      label = get_y_true(name_list,img_info,class_info,img_shape,standard_scale)
 
       #update remaining sample
       m = m - batch_size
@@ -100,7 +100,7 @@ def get_image_data(name_list,img_path,img_shape=(640,640)):
    return img_data
 
 
-def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scale=(8000,50000)):
+def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scale=(19360,66930)):
 
    """
    name_list -- list
@@ -130,7 +130,7 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
       for obj in obj_info:
 
          #update y_true
-         obj_small_true,obj_medium_true,obj_large_true = update_y_true(obj,class_info[obj[0]],obj_small_true,obj_medium_true,obj_large_true)
+         obj_small_true,obj_medium_true,obj_large_true = update_y_true(obj,class_info[obj[0]],obj_small_true,obj_medium_true,obj_large_true,img_shape,standard_scale)
          
       #save image info
       small_true.append(obj_small_true[:,:,:-1])
@@ -145,7 +145,7 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
    return (small_true,medium_true,large_true)
 
    
-def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640),standard_scale=(8000,50000)):
+def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640),standard_scale=(19360,66930)):
 
    """
    obj -- list [class,xmin,ymin,xcenter,ycenter]
