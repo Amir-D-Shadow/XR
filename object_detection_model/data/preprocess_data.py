@@ -38,7 +38,7 @@ def preprocess_bbox_info(path,path_pos,path_hw,name_pos="bbox_pos.txt",name_hw="
    """
    MS COCO 2017 Dataset
 
-   return numpy.ndarray,bbox_hw
+   return numpy.ndarray,bbox_pos,bbox_hw
    """
 
    dataset = pd.read_csv(path)
@@ -90,6 +90,96 @@ def preprocess_pre_define_anchor_box(bbox_hw,save_path,K=9,name="anchors.txt"):
 
    
    return anchors
+
+def preprocessing_label(input_path,save_path,name="gt_dataset.txt"):
+
+   """
+   save dict as {obj1:[[class,xmin,ymin,xcenter,ycenter],[class,xmin,ymin,xcenter,ycenter],...],obj2:...} (for each key)
+   """
+
+   #read csv file
+   dataset = pd.read_csv(input_path)
+   m = dataset.shape[0]
+
+   #calibrate bbox pos
+   dataset["xmin"] = dataset["xmin"] + (640 - dataset["width"] )//2
+   dataset["xmax"] = dataset["xmax"] + (640 - dataset["width"] )//2
+
+   dataset["ymin"] = dataset["ymin"] + (640 - dataset["height"] )//2
+   dataset["ymax"] = dataset["ymax"] + (640 - dataset["height"] )//2
+
+   #calculate center
+   dataset["xcenter"] = (dataset["xmin"] + dataset["xmax"])/2
+   dataset["ycenter"] = (dataset["ymin"] + dataset["ymax"])/2
+
+   #Group the label
+   gt_dataset = {}
+   
+   for i in range(m):
+
+      filename = dataset.iloc[i,0]
+      tmp = []
+
+      #class
+      tmp.append(dataset.iloc[i,3])
+
+      #xmin xmax ymin ymax
+      tmp.append(dataset.iloc[i,4].item())
+      tmp.append(dataset.iloc[i,5].item())
+      tmp.append(dataset.iloc[i,8].item())
+      tmp.append(dataset.iloc[i,9].item())
+
+      if not ( filename in gt_dataset.keys()  ):
+
+         gt_dataset[filename] = []
+         
+      gt_dataset[filename].append(tmp)
+
+
+   #save dataset
+   with open(f"{save_path}/{name}","w") as file:
+
+      file.write(json.dumps(gt_dataset))
+
+      file.close()
+
+   return gt_dataset
+   
+def preprocess_image(img,standard_shape=(640,640)):
+
+   """
+   img -- numpy.ndarray
+   standard_shape -- (height,width)
+   """
+   #get h,w
+   height,width = standard_shape
+
+   #get pad size
+   padH = (height - img.shape[0])//2
+   padW = (width - img.shape[1])//2
+
+   #pad img
+   diff_H = height - img.shape[0]
+   diff_W = width - img.shape[1]
+   
+   if (diff_H % 2 ) == 0 and (diff_W % 2) == 0:
+
+      img_pad = np.pad(img,((padH,padH),(padW,padW),(0,0)),mode="constant",constant_values=(0,0))
+
+   elif (diff_H % 2 ) != 0 and (diff_W % 2) == 0:
+
+      img_pad = np.pad(img,((padH,padH+1),(padW,padW),(0,0)),mode="constant",constant_values=(0,0))
+
+   elif (diff_H % 2 ) == 0 and (diff_W % 2) != 0:
+
+      img_pad = np.pad(img,((padH,padH),(padW,padW+1),(0,0)),mode="constant",constant_values=(0,0))
+
+   elif (diff_H % 2 ) != 0 and (diff_W % 2) != 0:
+
+      img_pad = np.pad(img,((padH,padH+1),(padW,padW+1),(0,0)),mode="constant",constant_values=(0,0))
+
+   return img_pad
+   
 
 def preprocess_y_true(input_path,save_path,anchors,class_map,input_shape = (640,640),pos_info_format = [(76,76,255),(38,38,255),(19,19,255)],bbox_type=3):
 
@@ -249,7 +339,7 @@ if __name__ == "__main__":
    
    
    #class map
-   class_map = preprocess_class(f"{path}/valid_set.csv",f"{os.getcwd()}/data")
+   #class_map = preprocess_class(f"{path}/test_set.csv",f"{os.getcwd()}/data")
 
    """
    file = open(f"{path}/data/class_map.txt")
@@ -271,8 +361,13 @@ if __name__ == "__main__":
    #pre-define anchor box
    anchors = preprocess_pre_define_anchor_box(bbox_hw,f"{os.getcwd()}/data")
    """
+   """
    file = open(f"{path}/data/anchors.txt")
    anchors = json.load(file)
    file.close()
    
    preprocess_y_true(f"{path}/valid_set.csv",f"{path}/y_true",np.array(anchors),class_map)
+   """
+
+   #gt_dataset = preprocessing_label(f"{path}/test_set.csv",f"{path}/data")
+   
