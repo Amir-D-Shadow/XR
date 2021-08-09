@@ -5,14 +5,14 @@ from Kmean import Kmean
 import os
 from numba import jit
 
-def preprocess_class(path,path_class_map ,name="class_map.txt"):
+def preprocess_class(input_path,save_path ,name="class_map.txt"):
 
    """
    MS COCO 2017 Dataset
 
    return dict
    """
-   dataset = pd.read_csv(path)
+   dataset = pd.read_csv(input_path)
 
    #get class map
    class_array = dataset.iloc[:,3]
@@ -27,7 +27,7 @@ def preprocess_class(path,path_class_map ,name="class_map.txt"):
          idx = idx + 1
 
    #save class map 
-   with open(f"{path_class_map}/{name}","w") as file:
+   with open(f"{save_path}/{name}","w") as file:
       
      file.write(json.dumps(class_map))
 

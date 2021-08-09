@@ -93,7 +93,7 @@ class alpha_loss(tf.keras.losses.Loss):
     union_area = true_area[:,:,:] + pred_area[:,:,:] - intersection_area[:,:,:]
 
     #calculate iou 
-    iou_val = intersection_area[:,:,:] / union_area[:,:,:]
+    iou_val = intersection_area[:,:,:] / (union_area[:,:,:] + 1e-10)
     #----------------------------------------------------------------------
 
     #outermost anchor box
@@ -108,7 +108,7 @@ class alpha_loss(tf.keras.losses.Loss):
     #----------------------------------------------------------------------
 
     #calculate DIOU
-    loss_tensor = 1 - (iou_val[:,:,:] - distance_center[:,:,:]/distance_outermost[:,:,:] )
+    loss_tensor = 1 - (iou_val[:,:,:] - distance_center[:,:,:]/(distance_outermost[:,:,:] + 1e-10))
     reg_loss = K.sum(loss_tensor)
 
     #****************** DIOU loss ******************
@@ -125,22 +125,25 @@ if __name__ == "__main__":
    data = tf.constant(value= np.random.randn(10,40,40,3),dtype=np.float64)
 
    x = tf.keras.layers.Input(shape =(40,40,3))
+   strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 
-   k1 = tf.keras.layers.BatchNormalization(axis=-1)(x)
-   h1 = tf.keras.layers.Conv2D(256,3,1,"valid",data_format="channels_last")(k1)
-   h2 = tf.keras.layers.BatchNormalization(axis=-1)(h1)
-   h3 = tf.keras.layers.LeakyReLU()(h2)
-   drop_h = tf.keras.layers.SpatialDropout2D(0.5)(h3)
-   h4 = tf.keras.layers.Conv2D(256,3,1,"same",data_format="channels_last")(drop_h)
-   h5 = tf.keras.layers.BatchNormalization(axis=-1)(h4)
-   h6 = tf.keras.layers.LeakyReLU()(h5)
-   k2 = tf.keras.layers.Conv2D(85,3,1,"same",data_format="channels_last")(h6)
+   with strategy.scope():
+     
+     k1 = tf.keras.layers.BatchNormalization(axis=-1)(x)
+     h1 = tf.keras.layers.Conv2D(1024,3,1,"valid",data_format="channels_last")(k1)
+     h2 = tf.keras.layers.BatchNormalization(axis=-1)(h1)
+     h3 = tf.keras.layers.LeakyReLU()(h2)
+     drop_h = tf.keras.layers.SpatialDropout2D(0.5)(h3)
+     h4 = tf.keras.layers.Conv2D(1024,3,1,"same",data_format="channels_last")(drop_h)
+     h5 = tf.keras.layers.BatchNormalization(axis=-1)(h4)
+     h6 = tf.keras.layers.LeakyReLU()(h5)
+     k2 = tf.keras.layers.Conv2D(85,3,1,"same",data_format="channels_last")(h6)
 
-   model = tf.keras.Model(inputs=x,outputs=k2)
+     model = tf.keras.Model(inputs=x,outputs=k2)
 
-   model.compile(optimizer="adam",loss=alpha_loss())
+     model.compile(optimizer="adam",loss=alpha_loss())
 
-   b = model.fit(data,y_true,epochs=50)
+   b = model.fit(data,y_true,epochs=100)
 
    plt.plot(b.history["loss"])
 

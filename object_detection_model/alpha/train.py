@@ -68,6 +68,7 @@ with strategy.scope():
    model = alpha_model()
    
 
+#set up
 batch_size_per_replica = 2
 
 EPOCHS = 3
