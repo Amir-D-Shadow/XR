@@ -8,11 +8,11 @@ class SPP(tf.keras.Model):
       super(SPP,self).__init__(**kwargs)
 
       #define layers
-      self.maxpool_5x5 = tf.keras.layers.MaxPooling2D(pool_size=5,strides=1,padding="same")
+      self.maxpool_5x5 = tf.keras.layers.MaxPooling2D(pool_size=5,strides=1,padding="same",data_format="channels_last")
 
-      self.maxpool_9x9 = tf.keras.layers.MaxPooling2D(pool_size=9,strides=1,padding="same")
+      self.maxpool_9x9 = tf.keras.layers.MaxPooling2D(pool_size=9,strides=1,padding="same",data_format="channels_last")
 
-      self.maxpool_13x13 = tf.keras.layers.MaxPooling2D(pool_size=13,strides=1,padding="same")
+      self.maxpool_13x13 = tf.keras.layers.MaxPooling2D(pool_size=13,strides=1,padding="same",data_format="channels_last")
 
 
    def call(self,inputs):
@@ -34,3 +34,8 @@ class SPP(tf.keras.Model):
       output_concat = tf.keras.layers.concatenate(inputs=[maxpool_5x5,maxpool_9x9,maxpool_13x13,inputs],axis=-1)
 
       return output_concat
+
+
+if __name__ == "__main__":
+
+   a = tf.keras.layers.MaxPooling2D(5,1)

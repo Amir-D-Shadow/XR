@@ -79,7 +79,7 @@ class CSPX(tf.keras.Model):
       self.CBM_1 = CBM(filters,kernel_size,strides,padding)
       
 
-   def call(self,inputs):
+   def call(self,inputs,train_flag=True):
 
       """
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
@@ -88,35 +88,35 @@ class CSPX(tf.keras.Model):
       x = inputs
 
       #CBL_1
-      CBL_1 = self.CBL_1(x)
+      CBL_1 = self.CBL_1(x,train_flag)
 
       #CBL_2
-      CBL_2 = self.CBL_2(CBL_1)
+      CBL_2 = self.CBL_2(CBL_1,train_flag)
 
       #res_unit block
       res_unit_block = CBL_2
       
       for i in range(1,self.num_of_res_unit+1):
 
-         res_unit_block =  (self.res_unit_seq[f"res_unit_{i}"])(res_unit_block) 
+         res_unit_block =  (self.res_unit_seq[f"res_unit_{i}"])(res_unit_block,train_flag) 
 
       #CBL3
-      CBL_3 = self.CBL_3(res_unit_block)
+      CBL_3 = self.CBL_3(res_unit_block,train_flag)
       
       #CBL_4
-      CBL_4 = self.CBL_4(CBL_1)
+      CBL_4 = self.CBL_4(CBL_1,train_flag)
 
       #Concat
       mid_concat = tf.keras.layers.concatenate(inputs=[CBL_3,CBL_4],axis=-1)
 
       #Batch Normalization
-      BN_x = self.BN_x(mid_concat)
+      BN_x = self.BN_x(mid_concat,training=train_flag)
 
       #leaky_relu_x
       leaky_relu_x = self.leaky_relu_x(BN_x)
 
       #output_CBM
-      output_CBM = self.CBM_1(leaky_relu_x)
+      output_CBM = self.CBM_1(leaky_relu_x,train_flag)
 
       return output_CBM
       
@@ -186,7 +186,7 @@ class CSPX_Neck(tf.keras.Model):
       self.CBM_1 = CBM(filters,kernel_size,strides,padding)
 
 
-   def call(self,inputs):
+   def call(self,inputs,train_flag=True):
 
       """
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
@@ -197,7 +197,7 @@ class CSPX_Neck(tf.keras.Model):
       
       for i in range(1,self.num_of_CBL+1):
 
-         CBL_block = (self.CBL_seq[f"CBL_{i}"])(CBL_block)
+         CBL_block = (self.CBL_seq[f"CBL_{i}"])(CBL_block,train_flag)
 
 
       #conv2D_1
@@ -210,13 +210,13 @@ class CSPX_Neck(tf.keras.Model):
       mid_concat = tf.keras.layers.concatenate(inputs=[conv2D_1,conv2D_2],axis=-1)
 
       #BN_x
-      BN_x = self.BN_x(mid_concat)
+      BN_x = self.BN_x(mid_concat,training=train_flag)
 
       #leaky relu
       leaky_relu_x = self.leaky_relu_x(BN_x)
 
       #CBM_1
-      output_CBM = self.CBM_1(leaky_relu_x)
+      output_CBM = self.CBM_1(leaky_relu_x,train_flag)
 
       return output_CBM
 
@@ -285,38 +285,38 @@ class rCSP(tf.keras.Model):
 
       self.CBL_7 = CBL(filters,kernel_size,strides,padding)
       
-   def call(self,inputs):
+   def call(self,inputs,train_flag=True):
 
       """
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
       """
 
       #CBL_1
-      CBL_1 = self.CBL_1(inputs)
+      CBL_1 = self.CBL_1(inputs,train_flag)
 
       #CBL_2
-      CBL_2 = self.CBL_2(CBL_1)
+      CBL_2 = self.CBL_2(CBL_1,train_flag)
 
       #CBL_3
-      CBL_3 = self.CBL_3(CBL_2)
+      CBL_3 = self.CBL_3(CBL_2,train_flag)
 
       #CBL_4
-      CBL_4 = self.CBL_4(CBL_3)
+      CBL_4 = self.CBL_4(CBL_3,train_flag)
 
       #SPP_1
       SPP_1 = self.SPP_1(CBL_4)
 
       #CBL_5
-      CBL_5 = self.CBL_5(SPP_1)
+      CBL_5 = self.CBL_5(SPP_1,train_flag)
 
       #CBL_6
-      CBL_6 = self.CBL_6(CBL_1)
+      CBL_6 = self.CBL_6(CBL_1,train_flag)
 
       #concat
       mid_concat = tf.keras.layers.concatenate(inputs=[CBL_6,CBL_5],axis=-1)
 
       #CBL_7
-      output_CBL_7 = self.CBL_7(mid_concat)
+      output_CBL_7 = self.CBL_7(mid_concat,train_flag)
 
       
       return output_CBL_7

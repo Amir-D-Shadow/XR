@@ -18,7 +18,7 @@ class TCBL(tf.keras.Model):
 
       
 
-   def call(self,inputs):
+   def call(self,inputs,train_flag=True):
 
       """
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
@@ -28,7 +28,7 @@ class TCBL(tf.keras.Model):
       conv2D_transpose_x = self.conv2D_transpose_x(inputs)
 
       #Batch Normalization layer
-      BN_x = self.BN_x(conv2D_transpose_x)
+      BN_x = self.BN_x(conv2D_transpose_x,training=train_flag)
 
       #activate by Mish
       output_leaky_relu = self.output_leaky_relu(BN_x)

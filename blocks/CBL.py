@@ -9,14 +9,14 @@ class CBL(tf.keras.Model):
       super(CBL,self).__init__(**kwargs)
 
       #define layers
-      self.conv2D_x = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding)
+      self.conv2D_x = tf.keras.layers.Conv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding,data_format="channels_last")
 
       self.BN_x = tf.keras.layers.BatchNormalization(axis=-1)
 
       self.output_leaky_relu = tf.keras.layers.LeakyReLU()
       
 
-   def call(self,inputs):
+   def call(self,inputs,train_flag=True):
 
       """
       input -- tensorflow layer with shape (m,n_H,n_W,n_C)
@@ -26,7 +26,7 @@ class CBL(tf.keras.Model):
       conv2D_x = self.conv2D_x(inputs)
 
       #Batch Normalization layer
-      BN_x = self.BN_x(conv2D_x)
+      BN_x = self.BN_x(conv2D_x,training=train_flag)
 
       #activate by Leaky relu
       output_leaky_relu = self.output_leaky_relu(BN_x)

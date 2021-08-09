@@ -36,15 +36,15 @@ class res_unit(tf.keras.Model):
       self.Add_layer = tf.keras.layers.Add()
 
 
-   def call(self,inputs):
+   def call(self,inputs,train_flag=True):
 
       x = inputs
 
       #1st CBM block
-      CBM_1 = self.CBM_1(inputs)
+      CBM_1 = self.CBM_1(inputs,train_flag)
 
       #2nd CBM block
-      CBM_2 = self.CBM_2(CBM_1)
+      CBM_2 = self.CBM_2(CBM_1,train_flag)
 
       #Add Layer
       output_shortcut = self.Add_layer([CBM_2,x])
