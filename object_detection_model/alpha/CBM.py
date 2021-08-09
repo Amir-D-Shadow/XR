@@ -37,10 +37,10 @@ class CBM(tf.keras.Model):
       conv2D_x = self.conv2D_x(inputs)
 
       #Batch Normalization layer
-      BN_x = self.BN_x(conv2D_x)
+      BN_x = self.BN_x(conv2D_x,training=train_flag)
 
       #activate by Mish
-      output_Mish = self.output_Mish(BN_x,training=train_flag)
+      output_Mish = self.output_Mish(BN_x)
 
       return output_Mish
    

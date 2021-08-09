@@ -110,7 +110,7 @@ class CSPX(tf.keras.Model):
       mid_concat = tf.keras.layers.concatenate(inputs=[CBL_3,CBL_4],axis=-1)
 
       #Batch Normalization
-      BN_x = self.BN_x(mid_concat,train_flag)
+      BN_x = self.BN_x(mid_concat,training=train_flag)
 
       #leaky_relu_x
       leaky_relu_x = self.leaky_relu_x(BN_x)
@@ -210,7 +210,7 @@ class CSPX_Neck(tf.keras.Model):
       mid_concat = tf.keras.layers.concatenate(inputs=[conv2D_1,conv2D_2],axis=-1)
 
       #BN_x
-      BN_x = self.BN_x(mid_concat,train_flag)
+      BN_x = self.BN_x(mid_concat,training=train_flag)
 
       #leaky relu
       leaky_relu_x = self.leaky_relu_x(BN_x)

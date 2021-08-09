@@ -26,10 +26,10 @@ class CBL(tf.keras.Model):
       conv2D_x = self.conv2D_x(inputs)
 
       #Batch Normalization layer
-      BN_x = self.BN_x(conv2D_x)
+      BN_x = self.BN_x(conv2D_x,training=train_flag)
 
       #activate by Leaky relu
-      output_leaky_relu = self.output_leaky_relu(BN_x,training=train_flag)
+      output_leaky_relu = self.output_leaky_relu(BN_x)
 
       return output_leaky_relu
       
