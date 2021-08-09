@@ -5,9 +5,9 @@ from matplotlib import pyplot as plt
 
 class alpha_loss(tf.keras.losses.Loss):
 
-  def __init__(self,gamma = 2):
+  def __init__(self,gamma = 2,**kwargs):
 
-    super(alpha_loss,self).__init__()
+    super(alpha_loss,self).__init__(**kwargs)
 
     self.gamma = gamma
 
@@ -17,9 +17,13 @@ class alpha_loss(tf.keras.losses.Loss):
     prob_true = y_true[:,:,:,0]
     prob_pred = y_pred[:,:,:,0]
 
+    prob_true = K.cast(prob_true,K.dtype(prob_pred))
+
     #get class
     class_true = y_true[:,:,:,5:]
     class_pred = y_pred[:,:,:,5:]
+
+    class_true = K.cast(class_true,K.dtype(class_pred))
 
     #****************** Focal loss ******************
 
@@ -45,9 +49,13 @@ class alpha_loss(tf.keras.losses.Loss):
     reg_left_true = y_true[:,:,:,1:3] 
     reg_left_pred = y_pred[:,:,:,1:3]
 
+    reg_left_true = K.cast(reg_left_true,K.dtype(reg_left_pred))
+
     #get reg center -- (x,y)
     reg_center_true = y_true[:,:,:,3:5] 
     reg_center_pred = y_pred[:,:,:,3:5]
+
+    reg_center_true = K.cast(reg_center_true,K.dtype(reg_center_pred))
 
     #calculate width x height of anchor box
     reg_wh_true = (reg_center_true[:,:,:,:] - reg_left_true[:,:,:,:])*2
@@ -109,6 +117,7 @@ class alpha_loss(tf.keras.losses.Loss):
     loss = prob_focal_loss + class_focal_loss + reg_loss
 
     return loss
+
 
 if __name__ == "__main__":
 
