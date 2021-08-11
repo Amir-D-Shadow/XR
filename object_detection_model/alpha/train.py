@@ -61,8 +61,11 @@ with strategy.scope():
 
       return total_loss
 
+   #define learning rate scheduler
+   lr_scheduler = tf.keras.optimizers.schedules.CosineDecay(initial_learning_rate=0.001,decay_steps=10,alpha=1e-5)
+   
    #define optimizer
-   optimizer = tf.keras.optimizers.Adam()
+   optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler)
 
    #define model
    model = alpha_model()
@@ -71,7 +74,7 @@ with strategy.scope():
 #set up
 batch_size_per_replica = 2
 
-EPOCHS = 3
+EPOCHS = 50
 
 #preprocessing class
 input_path = f"{cur_path}/annotations/train_annotations.csv"
