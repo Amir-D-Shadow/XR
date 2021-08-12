@@ -403,6 +403,10 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_small = CBL(80,3,1,"same")
 
+      self.batchnorm_prob_small = tf.keras.layers.BatchNormalization(axis=-1)
+
+      self.batchnorm_class_small =  tf.keras.layers.BatchNormalization(axis=-1)
+
       self.conv2D_prob_small = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
 
       self.conv2D_class_small =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
@@ -454,6 +458,10 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_medium = CBL(80,3,1,"same")
 
+      self.batchnorm_prob_medium = tf.keras.layers.BatchNormalization(axis=-1)
+
+      self.batchnorm_class_medium =  tf.keras.layers.BatchNormalization(axis=-1)
+
       self.conv2D_prob_medium = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
 
       self.conv2D_class_medium =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
@@ -503,6 +511,10 @@ class alpha_model(tf.keras.Model):
       self.CBL_prob_large = CBL(1,3,1,"same")
 
       self.CBL_class_large = CBL(80,3,1,"same")
+
+      self.batchnorm_prob_large = tf.keras.layers.BatchNormalization(axis=-1)
+
+      self.batchnorm_class_large =  tf.keras.layers.BatchNormalization(axis=-1)
 
       self.conv2D_prob_large = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
 
@@ -602,9 +614,13 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_small = self.CBL_class_small(TCBL_clsp_small,train_flag)
 
-      conv2D_prob_small = self.conv2D_prob_small(CBL_prob_small)
+      batchnorm_prob_small = self.batchnorm_prob_small(CBL_prob_small)
 
-      conv2D_class_small = self.conv2D_class_small(CBL_class_small)
+      batchnorm_class_small = self.batchnorm_class_small(CBL_class_small) 
+
+      conv2D_prob_small = self.conv2D_prob_small(batchnorm_prob_small)
+
+      conv2D_class_small = self.conv2D_class_small(batchnorm_class_small)
 
       #concat conv2D_prob_small -- CBL_left_small -- CBL_center_small -- conv2D_class_small  , out: 80 x 80 x 85
       #small_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_small,CBL_left_small,CBL_center_small,CBL_class_small],axis=-1)
@@ -641,9 +657,13 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_medium = self.CBL_class_medium(TCBL_clsp_medium,train_flag)
 
-      conv2D_prob_medium = self.conv2D_prob_medium(CBL_prob_medium)
+      batchnorm_prob_medium = self.batchnorm_prob_medium(CBL_prob_medium,training=train_flag)
 
-      conv2D_class_medium = self.conv2D_class_medium(CBL_class_medium)
+      batchnorm_class_medium = self.batchnorm_class_medium(CBL_class_medium,training=train_flag)
+
+      conv2D_prob_medium = self.conv2D_prob_medium(batchnorm_prob_medium)
+
+      conv2D_class_medium = self.conv2D_class_medium(batchnorm_class_medium)
 
       #concat conv2D_prob_medium  -- CBL_left_medium -- CBL_center_medium -- conv2D_class_medium  , out: 40 x 40 x 85
       #medium_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_medium,CBL_left_medium,CBL_center_medium,CBL_class_medium],axis=-1)
@@ -680,9 +700,13 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_large = self.CBL_class_large(TCBL_clsp_large,train_flag)
 
-      conv2D_prob_large = self.conv2D_prob_large(CBL_prob_large)
+      batchnorm_prob_large = self.batchnorm_prob_large(CBL_prob_large,training=train_flag)
 
-      conv2D_class_large = self.conv2D_class_large(CBL_class_large)
+      batchnorm_class_large = self.batchnorm_class_large(CBL_class_large,training=train_flag)
+
+      conv2D_prob_large = self.conv2D_prob_large(batchnorm_prob_large)
+
+      conv2D_class_large = self.conv2D_class_large(batchnorm_class_large)
 
       #concat conv2D_prob_large -- CBL_left_large -- CBL_center_large -- conv2D_class_large  , out: 20 x 20 x 85
       #large_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_large,CBL_left_large,CBL_center_large,CBL_class_large],axis=-1)
