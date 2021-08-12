@@ -31,8 +31,8 @@ class alpha_loss(tf.keras.losses.Loss):
     m = K.cast(K.shape(y_pred)[0],K.dtype(y_pred))
 
     #clip the prediction
-    #prob_pred = K.clip(prob_pred,min_value = 0.0, max_value = 1.0)
-    #class_pred = K.clip(class_pred,min_value = 0.0, max_value = 1.0)
+    prob_pred = K.clip(prob_pred,min_value = 0.0, max_value = 1.0)
+    class_pred = K.clip(class_pred,min_value = 0.0, max_value = 1.0)
 
     #prob focal loss
     loss_tensor =  - ( (1 - prob_pred)**self.gamma ) * prob_true * tf.math.log( prob_pred + 1e-18 ) - ( prob_pred ** self.gamma ) * ( 1 - prob_true ) * tf.math.log( 1 - prob_pred + 1e-18 )
@@ -93,7 +93,7 @@ class alpha_loss(tf.keras.losses.Loss):
     union_area = true_area[:,:,:] + pred_area[:,:,:] - intersection_area[:,:,:]
 
     #calculate iou 
-    iou_val = intersection_area[:,:,:] / ( union_area[:,:,:] +  1e-10 )
+    iou_val = intersection_area[:,:,:] / (union_area[:,:,:] + 1e-10)
     #----------------------------------------------------------------------
 
     #outermost anchor box
@@ -108,14 +108,14 @@ class alpha_loss(tf.keras.losses.Loss):
     #----------------------------------------------------------------------
 
     #calculate DIOU
-    loss_tensor = 1 - (iou_val[:,:,:] - distance_center[:,:,:]/ (distance_outermost[:,:,:] +  1e-10) )
+    loss_tensor = 1 - (iou_val[:,:,:] - distance_center[:,:,:]/(distance_outermost[:,:,:] + 1e-10))
     reg_loss = K.sum(loss_tensor)
 
     #****************** DIOU loss ******************
- 
+
     #calculate loss
-    loss = prob_focal_loss + class_focal_loss + 5 * reg_loss
- 
+    loss = prob_focal_loss + class_focal_loss + reg_loss
+
     return loss
 
 

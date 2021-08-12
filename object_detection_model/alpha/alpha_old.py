@@ -403,15 +403,10 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_small = CBL(80,3,1,"same")
 
-      self.conv2D_prob_small = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      self.conv2D_class_small =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      #concat conv2D_prob_small -- CBL_left_small -- CBL_center_small -- conv2D_class_small  , out: 80 x 80 x 85
+      #concat CBL_prob_small -- CBL_left_small -- CBL_center_small -- CBL_class_small  , out: 80 x 80 x 85
 
       #output small
-      #self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_small")
-      
+      self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_small")
 
       #----------------------------------------------------------------
 
@@ -454,14 +449,10 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_medium = CBL(80,3,1,"same")
 
-      self.conv2D_prob_medium = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      self.conv2D_class_medium =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      #concat conv2D_prob_medium  -- CBL_left_medium -- CBL_center_medium -- conv2D_class_medium  , out: 40 x 40 x 85
+      #concat CBL_prob_medium -- CBL_left_medium -- CBL_center_medium -- CBL_class_medium  , out: 40 x 40 x 85
       
       #output medium
-      #self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_medium")
+      self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_medium")
 
       #----------------------------------------------------------------
 
@@ -504,14 +495,10 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_large = CBL(80,3,1,"same")
 
-      self.conv2D_prob_large = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      self.conv2D_class_large =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      #concat conv2D_prob_large -- CBL_left_large -- CBL_center_large -- conv2D_class_large  , out: 20 x 20 x 85
+      #concat CBL_prob_large -- CBL_left_large -- CBL_center_large -- CBL_class_large  , out: 20 x 20 x 85
       
-      #output large
-      #self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_large")
+      #output medium
+      self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_large")
 
       #----------------------------------------------------------------
       
@@ -602,17 +589,13 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_small = self.CBL_class_small(TCBL_clsp_small,train_flag)
 
-      conv2D_prob_small = self.conv2D_prob_small(CBL_prob_small)
+      #concat CBL_prob_small -- CBL_left_small -- CBL_center_small -- CBL_class_small  , out: 80 x 80 x 85
 
-      conv2D_class_small = self.conv2D_class_small(CBL_class_small)
-
-      #concat conv2D_prob_small -- CBL_left_small -- CBL_center_small -- conv2D_class_small  , out: 80 x 80 x 85
-      #small_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_small,CBL_left_small,CBL_center_small,CBL_class_small],axis=-1)
+      small_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_small,CBL_left_small,CBL_center_small,CBL_class_small],axis=-1)
 
       #**************** output small ****************
       
-      #output_small = self.conv2D_small(small_concat)
-      output_small = tf.keras.layers.concatenate(inputs=[conv2D_prob_small,CBL_left_small,CBL_center_small,conv2D_class_small],axis=-1,name="output_small")
+      output_small = self.conv2D_small(small_concat)
       
       #**************** output small ****************
 
@@ -641,17 +624,14 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_medium = self.CBL_class_medium(TCBL_clsp_medium,train_flag)
 
-      conv2D_prob_medium = self.conv2D_prob_medium(CBL_prob_medium)
+      #concat CBL_prob_medium -- CBL_left_medium -- CBL_center_medium -- CBL_class_medium  , out: 40 x 40 x 85
 
-      conv2D_class_medium = self.conv2D_class_medium(CBL_class_medium)
-
-      #concat conv2D_prob_medium  -- CBL_left_medium -- CBL_center_medium -- conv2D_class_medium  , out: 40 x 40 x 85
-      #medium_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_medium,CBL_left_medium,CBL_center_medium,CBL_class_medium],axis=-1)
+      medium_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_medium,CBL_left_medium,CBL_center_medium,CBL_class_medium],axis=-1)
       
       #**************** output medium ****************
       
-      #output_medium = self.conv2D_medium(medium_concat)
-      output_medium = tf.keras.layers.concatenate(inputs=[conv2D_prob_medium,CBL_left_medium,CBL_center_medium,conv2D_class_medium],axis=-1,name="output_medium")
+      output_medium = self.conv2D_medium(medium_concat)
+      
 
       #**************** output medium ****************
 
@@ -680,24 +660,16 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_large = self.CBL_class_large(TCBL_clsp_large,train_flag)
 
-      conv2D_prob_large = self.conv2D_prob_large(CBL_prob_large)
-
-      conv2D_class_large = self.conv2D_class_large(CBL_class_large)
-
-      #concat conv2D_prob_large -- CBL_left_large -- CBL_center_large -- conv2D_class_large  , out: 20 x 20 x 85
-      #large_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_large,CBL_left_large,CBL_center_large,CBL_class_large],axis=-1)
+      #concat CBL_prob_large -- CBL_left_large -- CBL_center_large -- CBL_class_large  , out: 20 x 20 x 85
+      large_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_large,CBL_left_large,CBL_center_large,CBL_class_large],axis=-1)
       
       #**************** output large ****************
       
-      #output_large = self.conv2D_large(large_concat)
-      output_large = tf.keras.layers.concatenate(inputs=[conv2D_prob_large,CBL_left_large,CBL_center_large,conv2D_class_large],axis=-1,name="output_large")
+      output_large = self.conv2D_large(large_concat)
+      
 
       #**************** output large ****************
 
       return [output_large,output_medium,output_small]
 
-   def graph_model(self,dim):
-
-      x = tf.keras.layers.Input(shape=dim)
       
-      return tf.keras.Model(inputs=x,outputs=self.call(x))
