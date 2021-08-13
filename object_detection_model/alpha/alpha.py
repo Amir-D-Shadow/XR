@@ -614,9 +614,9 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_small = self.CBL_class_small(TCBL_clsp_small,train_flag)
 
-      batchnorm_prob_small = self.batchnorm_prob_small(CBL_prob_small)
+      batchnorm_prob_small = self.batchnorm_prob_small(CBL_prob_small,training=train_flag)
 
-      batchnorm_class_small = self.batchnorm_class_small(CBL_class_small) 
+      batchnorm_class_small = self.batchnorm_class_small(CBL_class_small,training=train_flag) 
 
       conv2D_prob_small = self.conv2D_prob_small(batchnorm_prob_small)
 
