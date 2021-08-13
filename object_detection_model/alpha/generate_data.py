@@ -92,6 +92,8 @@ def get_image_data(name_list,img_path,img_shape=(640,640)):
       #calibrate image
       img = preprocess_data.preprocess_image(img,img_shape)
 
+      #img = cv2.resize(img,(128,128))
+
       #save img
       img_data.append(img)
 
@@ -122,6 +124,10 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
       obj_small_true = np.zeros((80,80,86))
       obj_medium_true = np.zeros((40,40,86))
       obj_large_true = np.zeros((20,20,86))
+
+      #obj_small_true = np.zeros((16,16,86))
+      #obj_medium_true = np.zeros((8,8,86))
+      #obj_large_true = np.zeros((4,4,86))
 
       #get (obj_info -- list)
       obj_info = img_info[name]
@@ -185,7 +191,7 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
       obj_small_true[h_pos,w_pos,5+class_id] = 1
 
       #label occupied cells
-      obj_small_true[h_pos,w_pos,-1] == 1
+      obj_small_true[h_pos,w_pos,-1] = 1
 
       #multiple positive
       obj_small_true = multiple_positive_labeling(obj_small_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
@@ -213,7 +219,7 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
       obj_medium_true[h_pos,w_pos,5+class_id] = 1
 
       #label occupied cells
-      obj_medium_true[h_pos,w_pos,-1] == 1
+      obj_medium_true[h_pos,w_pos,-1] = 1
 
       #multiple positive
       obj_medium_true = multiple_positive_labeling(obj_medium_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
@@ -241,7 +247,7 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
       obj_large_true[h_pos,w_pos,5+class_id] = 1
 
       #label occupied cells
-      obj_large_true[h_pos,w_pos,-1] == 1
+      obj_large_true[h_pos,w_pos,-1] = 1
 
       #multiple positive
       obj_large_true = multiple_positive_labeling(obj_large_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
@@ -283,7 +289,7 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
             y_true[h_pos,w_pos,5+class_id] = 1
 
             #label occupied cells
-            y_true[h_pos,w_pos,-1] == 1
+            y_true[h_pos,w_pos,-1] = 1
 
 
    return y_true
@@ -309,7 +315,7 @@ if __name__ == "__main__":
 
    i = 0
    ctime = time.time()
-   for img_data,label in get_gt_data(8,gt_dataset,class_info,f"{os.getcwd()}/img"):
+   for img_data,label in get_gt_data(8,gt_dataset,class_info,f"{os.getcwd()}/images"):
 
       print(img_data.shape)
 
