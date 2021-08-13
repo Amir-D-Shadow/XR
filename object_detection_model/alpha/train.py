@@ -68,6 +68,7 @@ with strategy.scope():
    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler)
 
    #define model
+   #model = tf.keras.models.load_model(f"{cur_path}/gdrive/MyDrive/model")
    model = alpha_model()
    
 

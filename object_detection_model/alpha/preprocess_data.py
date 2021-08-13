@@ -330,7 +330,68 @@ def update_pos_info(pos_info,center_x,center_y,xmin,ymin,xmax,ymax,class_index,a
    #class
    (pos_info[best_anchor_index])[target_y,target_x,(class_index+5)] = 1
 
-   
+def preprocess_class_color_map(class_info,save_path,name="class_color_map.txt"):
+
+  num_class = len(list(class_info.keys()))
+
+  step = int(256*3/num_class)
+
+  class_color_map = {}
+  x,y,z = 0,0,0
+
+  for k in class_info.values():
+
+    if x < 255:
+
+      x = x + step
+
+    elif y < 255:
+
+      y = y + step
+
+    elif z < 255:
+
+      z = z + step
+
+    if x > 255:
+
+      x = 255
+
+    elif y > 255:
+
+      y = 255
+
+    elif z > 255:
+
+      z = 255
+
+    class_color_map[k] = (x,y,z)
+
+  with open(f"{save_path}/{name}","w") as file:
+
+    file.write(json.dumps(class_color_map))
+
+    file.close()
+
+  return class_color_map
+
+def reverse_class_info(class_info,save_path,name="reversed_class_map.txt"):
+
+  reversed_class_map = {}
+
+  for k in class_info.keys():
+
+    val = class_info[k]
+
+    reversed_class_map[val] = k
+
+  with open(f"{save_path}/{name}","w") as file:
+
+    file.write(json.dumps(reversed_class_map))
+
+    file.close()
+
+  return reversed_class_map
    
 
 if __name__ == "__main__":
