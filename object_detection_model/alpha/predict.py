@@ -270,6 +270,7 @@ if __name__ == "__main__":
    """
    model_path = f"{path}/model"
    image_path = f"{path}/pending_to_analysis"
+   result_path = f"{path}/result"
 
    model = load_model(model_path)
    
