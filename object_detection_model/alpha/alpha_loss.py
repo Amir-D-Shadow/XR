@@ -13,6 +13,9 @@ class alpha_loss(tf.keras.losses.Loss):
 
   def call(self,y_true,y_pred):
 
+    #get object mask
+    object_mask = K.cast(y_true[:,:,:,0],K.dtype(y_pred))
+
     #get prob
     prob_true = y_true[:,:,:,0]
     prob_pred = y_pred[:,:,:,0]
@@ -35,11 +38,11 @@ class alpha_loss(tf.keras.losses.Loss):
     #class_pred = K.clip(class_pred,min_value = 0.0, max_value = 1.0)
 
     #prob focal loss
-    loss_tensor =  - ( (1 - prob_pred)**self.gamma ) * prob_true * tf.math.log( prob_pred + 1e-18 ) - ( prob_pred ** self.gamma ) * ( 1 - prob_true ) * tf.math.log( 1 - prob_pred + 1e-18 )
+    loss_tensor =  - ( (1 - prob_pred)**self.gamma ) * prob_true * tf.math.log( prob_pred + 1e-18 ) - ( prob_pred ** self.gamma ) * ( 1 - prob_true ) * tf.math.log( 1 - prob_pred + 1e-18 ) 
     prob_focal_loss = K.sum(loss_tensor)/ m
 
     #class focal loss
-    loss_tensor =  - ( (1 - class_pred)**self.gamma ) * class_true * tf.math.log( class_pred + 1e-18 ) - ( class_pred ** self.gamma) * ( 1 - class_true ) * tf.math.log( 1 - class_pred + 1e-18 )
+    loss_tensor =  - ( (1 - class_pred)**self.gamma ) * class_true * tf.math.log( class_pred + 1e-18 ) - ( class_pred ** self.gamma) * ( 1 - class_true ) * tf.math.log( 1 - class_pred + 1e-18 ) * 0.5
     class_focal_loss = K.sum(loss_tensor) / m
 
 
@@ -51,11 +54,17 @@ class alpha_loss(tf.keras.losses.Loss):
 
     reg_left_true = K.cast(reg_left_true,K.dtype(reg_left_pred))
 
+    #mask the reg (because we consider the box with object only )
+    reg_left_pred = reg_left_pred[:,:,:,:] * object_mask[:,:,:,tf.newaxis]
+
     #get reg center -- (x,y)
     reg_center_true = y_true[:,:,:,3:5] 
     reg_center_pred = y_pred[:,:,:,3:5]
 
     reg_center_true = K.cast(reg_center_true,K.dtype(reg_center_pred))
+
+    #mask the reg (because we consider the box with object only )
+    reg_center_pred = reg_center_pred[:,:,:,:] * object_mask[:,:,:,tf.newaxis]
 
     #calculate width x height of anchor box
     reg_wh_true = (reg_center_true[:,:,:,:] - reg_left_true[:,:,:,:])*2
@@ -122,6 +131,7 @@ class alpha_loss(tf.keras.losses.Loss):
 if __name__ == "__main__":
 
    y_true = tf.constant(value = np.random.randn(10,38,38,85),dtype=np.float64)
+   y_true = np.clip(y_true,0.0,1.0)
    data = tf.constant(value= np.random.randn(10,40,40,3),dtype=np.float64)
 
    x = tf.keras.layers.Input(shape =(40,40,3))
@@ -137,7 +147,8 @@ if __name__ == "__main__":
      h4 = tf.keras.layers.Conv2D(1024,3,1,"same",data_format="channels_last")(drop_h)
      h5 = tf.keras.layers.BatchNormalization(axis=-1)(h4)
      h6 = tf.keras.layers.LeakyReLU()(h5)
-     k2 = tf.keras.layers.Conv2D(85,3,1,"same",data_format="channels_last")(h6)
+     bat1 = tf.keras.layers.BatchNormalization(axis=-1)(h6)
+     k2 = tf.keras.layers.Conv2D(85,3,1,"same",data_format="channels_last",activation="sigmoid")(bat1)
 
      model = tf.keras.Model(inputs=x,outputs=k2)
 

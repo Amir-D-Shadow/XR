@@ -70,22 +70,23 @@ def predict(model,image_path,result_path,reversed_class_map,class_color_map,conf
    #analysis and draw data
    for i in range(batch_size):
 
-      img = img_data[i].copy()
+      #de-normalized
+      img = img_data[i].copy()  * np.float64(255)
 
       #large object
       large_obj = y[0][i].numpy()
       selected_object = analyse_feature(large_obj,confidence_threshold,diou_threshold)
-      img = draw_box_based_on_feat(img,seleted_object,reversed_class_map,class_color_map)
+      img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
       
       #medium object
       medium_obj = y[1][i].numpy()
       selected_object = analyse_feature(medium_obj,confidence_threshold,diou_threshold)
-      img = draw_box_based_on_feat(img,seleted_object,reversed_class_map,class_color_map)
+      img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
       
       #small object
       small_obj = y[2][i].numpy()
       selected_object = analyse_feature(small_obj,confidence_threshold,diou_threshold)
-      img = draw_box_based_on_feat(img,seleted_object,reversed_class_map,class_color_map)
+      img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
 
       #save the result
       cv2.imwrite(f"{result_path}/res_{i}.jpg",img)
@@ -98,7 +99,7 @@ def predict(model,image_path,result_path,reversed_class_map,class_color_map,conf
    
    return y
 
-def draw_box_based_on_feat(img,seleted_object,reversed_class_map,class_color_map):
+def draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map):
 
 
    for obj in selected_object:
@@ -265,15 +266,15 @@ if __name__ == "__main__":
    file.close()
    
    class_color_map = preprocess_data.preprocess_class_color_map(class_info,data_path)
-   reverse_class_info = preprocess_data.reverse_class_info(class_info,data_path)
+   reversed_class_info = preprocess_data.reverse_class_info(class_info,data_path)
    
-   """
+
    model_path = f"{path}/model"
    image_path = f"{path}/pending_to_analysis"
    result_path = f"{path}/result"
 
    model = load_model(model_path)
    
-   y = predict(model,image_path,reversed_class_map,class_color_map,confidence_threshold=0.8,diou_threshold=0.4,batch_size=1)
-   """
+   y = predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.8,diou_threshold=0.4,batch_size=1)
+ 
 
