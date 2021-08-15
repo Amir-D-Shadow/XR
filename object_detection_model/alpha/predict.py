@@ -61,43 +61,48 @@ def get_image_generator(batch_size,image_path,standard_shape=(640,640)):
 
 def predict(model,image_path,result_path,reversed_class_map,class_color_map,confidence_threshold=0.8,diou_threshold=0.4,batch_size=8,standard_shape=(640,640)):
 
+   img_idx = 0
+
    #get batch of image
-   img_data = next(get_image_generator(batch_size,image_path,standard_shape))
+   for img_data in get_image_generator(batch_size,image_path,standard_shape) :
 
-   #get prediction
-   y = step_predict(img_data,model)
+      #get prediction
+      y = step_predict(img_data,model)
 
-   #analysis and draw data
-   for i in range(batch_size):
+      #analysis and draw data
+      for i in range(batch_size):
 
-      #de-normalized
-      img = img_data[i].copy()  * np.float64(255)
+         #de-normalized
+         img = img_data[i].copy()  * np.float64(255)
 
-      #large object
-      large_obj = y[0][i].numpy()
-      selected_object = analyse_feature(large_obj,confidence_threshold,diou_threshold)
-      img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
+         #large object
+         large_obj = y[0][i].numpy()
+         selected_object = analyse_feature(large_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
+         
+         #medium object
+         medium_obj = y[1][i].numpy()
+         selected_object = analyse_feature(medium_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
+         
+         #small object
+         small_obj = y[2][i].numpy()
+         selected_object = analyse_feature(small_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
+
+         #save the result
+         cv2.imwrite(f"{result_path}/res_{img_idx}.jpg",img)
+
+         #update img_idx
+         img_idx = img_idx + 1
+
+      """
+      print(type(y))
+
+      print(type(y[0]))
+      """
       
-      #medium object
-      medium_obj = y[1][i].numpy()
-      selected_object = analyse_feature(medium_obj,confidence_threshold,diou_threshold)
-      img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
-      
-      #small object
-      small_obj = y[2][i].numpy()
-      selected_object = analyse_feature(small_obj,confidence_threshold,diou_threshold)
-      img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
-
-      #save the result
-      cv2.imwrite(f"{result_path}/res_{i}.jpg",img)
-
-   """
-   print(type(y))
-
-   print(type(y[0]))
-   """
-   
-   return y
+      yield y
 
 def draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map):
 
@@ -274,7 +279,10 @@ if __name__ == "__main__":
    result_path = f"{path}/result"
 
    model = load_model(model_path)
+
    
-   y = predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.8,diou_threshold=0.4,batch_size=1)
+   for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.8,diou_threshold=0.4,batch_size=1):
+
+      print("ok")
  
 
