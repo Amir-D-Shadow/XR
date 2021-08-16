@@ -5,6 +5,7 @@ from CSPX import CSPX,rCSP
 from TCBM import TCBM
 from SPP import SPP
 from TCBL import TCBL
+from CBS import CBS
 
 
 class alpha_model(tf.keras.Model):
@@ -387,7 +388,7 @@ class alpha_model(tf.keras.Model):
 
       #----------------------------------------------------------------
 
-      #decouple head -- small object , in : 80 x 80 x 256  out: 80 x 80 x (1 + 2 + 2 + 80)
+      #decouple head -- small object , in : 80 x 80 x 256  out: 80 x 80 x (1 + 2 + 2 + 2 + 2 + 80)
 
       #reg
       self.TCBL_reg_small  = TCBL(256,1,1,"valid")
@@ -396,6 +397,15 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_center_small = CBL(2,3,1,"same")
 
+      self.CBL_left_ratio_small = CBL(2,3,1,"same")
+
+      self.CBL_center_ratio_small = CBL(2,3,1,"same")
+
+      self.CBS_left_ratio_small = CBS(2,1,1,"same")
+
+      self.CBS_center_ratio_small = CBS(2,1,1,"same")
+      
+
       #class + prob
       self.TCBL_clsp_small  = TCBL(256,1,1,"valid")
 
@@ -403,15 +413,11 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_small = CBL(80,3,1,"same")
 
-      self.batchnorm_prob_small = tf.keras.layers.BatchNormalization(axis=-1)
+      self.CBS_prob_small = CBS(1,1,1,"same")
 
-      self.batchnorm_class_small =  tf.keras.layers.BatchNormalization(axis=-1)
+      self.CBS_class_small =  CBS(80,1,1,"same")
 
-      self.conv2D_prob_small = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      self.conv2D_class_small =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      #concat conv2D_prob_small -- CBL_left_small -- CBL_center_small -- conv2D_class_small  , out: 80 x 80 x 85
+      #concat CBS_prob_small -- CBL_left_small -- CBL_center_small -- CBS_left_ratio_small -- CBS_center_ratio_small -- CBS_class_small  , out: 80 x 80 x 89
 
       #output small
       #self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_small")
@@ -442,7 +448,7 @@ class alpha_model(tf.keras.Model):
 
       #----------------------------------------------------------------
 
-      #decouple head -- medium object , in : 39 x 39 x 256  out: 40 x 40 x (1 + 2 + 2 + 80)
+      #decouple head -- medium object , in : 39 x 39 x 256  out: 40 x 40 x (1 + 2 + 2 + 2 + 2 + 80)
 
       #reg
       self.TCBL_reg_medium  = TCBL(256,2,1,"valid")
@@ -451,6 +457,14 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_center_medium = CBL(2,3,1,"same")
 
+      self.CBL_left_ratio_medium = CBL(2,3,1,"same")
+
+      self.CBL_center_ratio_medium = CBL(2,3,1,"same")
+
+      self.CBS_left_ratio_medium = CBS(2,1,1,"same")
+
+      self.CBS_center_ratio_medium = CBS(2,1,1,"same")
+
       #class + prob
       self.TCBL_clsp_medium  = TCBL(256,2,1,"valid")
 
@@ -458,15 +472,11 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_medium = CBL(80,3,1,"same")
 
-      self.batchnorm_prob_medium = tf.keras.layers.BatchNormalization(axis=-1)
+      self.CBS_prob_medium = CBS(1,1,1,"same")
 
-      self.batchnorm_class_medium =  tf.keras.layers.BatchNormalization(axis=-1)
-
-      self.conv2D_prob_medium = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      self.conv2D_class_medium =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      #concat conv2D_prob_medium  -- CBL_left_medium -- CBL_center_medium -- conv2D_class_medium  , out: 40 x 40 x 85
+      self.CBS_class_medium =  CBS(80,1,1,"same")
+      
+      #concat CBS_prob_medium  -- CBL_left_medium -- CBL_center_medium -- CBS_left_ratio_medium -- CBS_center_ratio_medium -- CBS_class_medium  , out: 40 x 40 x 89
       
       #output medium
       #self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_medium")
@@ -496,7 +506,7 @@ class alpha_model(tf.keras.Model):
 
       #----------------------------------------------------------------
 
-      #decouple head -- large object , in : 19 x 19 x 512   out: 20 x 20 x (1 + 2 + 2 + 80)
+      #decouple head -- large object , in : 19 x 19 x 512   out: 20 x 20 x (1 + 2 + 2 + 2 + 2 + 80)
 
       #reg
       self.TCBL_reg_large  = TCBL(512,2,1,"valid")
@@ -505,6 +515,14 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_center_large = CBL(2,3,1,"same")
 
+      self.CBL_left_ratio_large = CBL(2,3,1,"same")
+
+      self.CBL_center_ratio_large = CBL(2,3,1,"same")
+
+      self.CBS_left_ratio_large = CBS(2,1,1,"same")
+
+      self.CBS_center_ratio_large = CBS(2,1,1,"same")
+
       #class + prob
       self.TCBL_clsp_large  = TCBL(512,2,1,"valid")
 
@@ -512,15 +530,11 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_class_large = CBL(80,3,1,"same")
 
-      self.batchnorm_prob_large = tf.keras.layers.BatchNormalization(axis=-1)
+      self.CBS_prob_large = CBS(1,1,1,"same")
 
-      self.batchnorm_class_large =  tf.keras.layers.BatchNormalization(axis=-1)
+      self.CBS_class_large =  CBS(80,1,1,"same")
 
-      self.conv2D_prob_large = tf.keras.layers.Conv2D(1,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      self.conv2D_class_large =  tf.keras.layers.Conv2D(80,1,1,padding="same",data_format = "channels_last",activation="sigmoid")
-
-      #concat conv2D_prob_large -- CBL_left_large -- CBL_center_large -- conv2D_class_large  , out: 20 x 20 x 85
+      #concat CBS_prob_large -- CBL_left_large -- CBL_center_large -- CBS_left_ratio_large -- CBS_center_ratio_large -- CBS_class_large  , out: 20 x 20 x 89
       
       #output large
       #self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_large")
@@ -607,6 +621,14 @@ class alpha_model(tf.keras.Model):
 
       CBL_center_small = self.CBL_center_small(TCBL_reg_small,train_flag)
 
+      CBL_left_ratio_small = self.CBL_left_ratio_small(TCBL_reg_small,train_flag)
+      
+      CBL_center_ratio_small = self.CBL_center_ratio_small(TCBL_reg_small,train_flag)
+
+      CBS_left_ratio_small  = self.CBS_left_ratio_small(CBL_left_ratio_small,train_flag)
+
+      CBS_center_ratio_small = self.CBS_center_ratio_small(CBL_center_ratio_small,train_flag)
+
       #class + prob -- small
       TCBL_clsp_small = self.TCBL_clsp_small(rCSP3,train_flag)
 
@@ -614,21 +636,17 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_small = self.CBL_class_small(TCBL_clsp_small,train_flag)
 
-      batchnorm_prob_small = self.batchnorm_prob_small(CBL_prob_small,training=train_flag)
+      CBS_prob_small = self.CBS_prob_small(CBL_prob_small,train_flag)
 
-      batchnorm_class_small = self.batchnorm_class_small(CBL_class_small,training=train_flag) 
-
-      conv2D_prob_small = self.conv2D_prob_small(batchnorm_prob_small)
-
-      conv2D_class_small = self.conv2D_class_small(batchnorm_class_small)
-
-      #concat conv2D_prob_small -- CBL_left_small -- CBL_center_small -- conv2D_class_small  , out: 80 x 80 x 85
+      CBS_class_small = self.CBS_class_small(CBL_class_small,train_flag)
+      
+      #concat CBS_prob_small -- CBL_left_small -- CBL_center_small -- CBS_left_ratio_small -- CBS_center_ratio_small -- CBS_class_small  , out: 80 x 80 x 89
       #small_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_small,CBL_left_small,CBL_center_small,CBL_class_small],axis=-1)
 
       #**************** output small ****************
       
       #output_small = self.conv2D_small(small_concat)
-      output_small = tf.keras.layers.concatenate(inputs=[conv2D_prob_small,CBL_left_small,CBL_center_small,conv2D_class_small],axis=-1,name="output_small")
+      output_small = tf.keras.layers.concatenate(inputs=[CBS_prob_small,CBL_left_small,CBL_center_small,CBS_left_ratio_small,CBS_center_ratio_small,CBS_class_small],axis=-1,name="output_small")
       
       #**************** output small ****************
 
@@ -650,6 +668,14 @@ class alpha_model(tf.keras.Model):
 
       CBL_center_medium = self.CBL_center_medium(TCBL_reg_medium,train_flag)
 
+      CBL_left_ratio_medium = self.CBL_left_ratio_medium(TCBL_reg_medium,train_flag)
+
+      CBL_center_ratio_medium = self.CBL_center_ratio_medium(TCBL_reg_medium,train_flag)
+
+      CBS_left_ratio_medium = self.CBS_left_ratio_medium(CBL_left_ratio_medium,train_flag)
+
+      CBS_center_ratio_medium = self.CBS_center_ratio_medium(CBL_center_ratio_medium,train_flag)
+
       #class + prob -- medium
       TCBL_clsp_medium = self.TCBL_clsp_medium(rCSP4,train_flag)
 
@@ -657,21 +683,18 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_medium = self.CBL_class_medium(TCBL_clsp_medium,train_flag)
 
-      batchnorm_prob_medium = self.batchnorm_prob_medium(CBL_prob_medium,training=train_flag)
+      CBS_prob_medium = self.CBS_prob_medium(CBL_prob_medium,train_flag)
 
-      batchnorm_class_medium = self.batchnorm_class_medium(CBL_class_medium,training=train_flag)
+      CBS_class_medium = self.CBS_class_medium(CBL_class_medium,train_flag)
 
-      conv2D_prob_medium = self.conv2D_prob_medium(batchnorm_prob_medium)
 
-      conv2D_class_medium = self.conv2D_class_medium(batchnorm_class_medium)
-
-      #concat conv2D_prob_medium  -- CBL_left_medium -- CBL_center_medium -- conv2D_class_medium  , out: 40 x 40 x 85
+      #concat CBS_prob_medium  -- CBL_left_medium -- CBL_center_medium -- CBS_left_ratio_medium -- CBS_center_ratio_medium -- CBS_class_medium  , out: 40 x 40 x 89
       #medium_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_medium,CBL_left_medium,CBL_center_medium,CBL_class_medium],axis=-1)
       
       #**************** output medium ****************
       
       #output_medium = self.conv2D_medium(medium_concat)
-      output_medium = tf.keras.layers.concatenate(inputs=[conv2D_prob_medium,CBL_left_medium,CBL_center_medium,conv2D_class_medium],axis=-1,name="output_medium")
+      output_medium = tf.keras.layers.concatenate(inputs=[CBS_prob_medium,CBL_left_medium,CBL_center_medium,CBS_left_ratio_medium,CBS_center_ratio_medium,CBS_class_medium],axis=-1,name="output_medium")
 
       #**************** output medium ****************
 
@@ -693,6 +716,14 @@ class alpha_model(tf.keras.Model):
 
       CBL_center_large = self.CBL_center_large(TCBL_reg_large,train_flag)
 
+      CBL_left_ratio_large = self.CBL_left_ratio_large(TCBL_reg_large,train_flag)
+
+      CBL_center_ratio_large = self.CBL_center_ratio_large(TCBL_reg_large,train_flag)
+
+      CBS_left_ratio_large = self.CBS_left_ratio_large(CBL_left_ratio_large,train_flag)
+
+      CBS_center_ratio_large = self.CBS_center_ratio_large(CBL_center_ratio_large,train_flag)
+
       #class + prob -- large
       TCBL_clsp_large = self.TCBL_clsp_large(rCSP5,train_flag)
 
@@ -700,21 +731,17 @@ class alpha_model(tf.keras.Model):
 
       CBL_class_large = self.CBL_class_large(TCBL_clsp_large,train_flag)
 
-      batchnorm_prob_large = self.batchnorm_prob_large(CBL_prob_large,training=train_flag)
+      CBS_prob_large = self.CBS_prob_large(CBL_prob_large,train_flag)
 
-      batchnorm_class_large = self.batchnorm_class_large(CBL_class_large,training=train_flag)
+      CBS_class_large = self.CBS_class_large(CBL_class_large,train_flag)
 
-      conv2D_prob_large = self.conv2D_prob_large(batchnorm_prob_large)
-
-      conv2D_class_large = self.conv2D_class_large(batchnorm_class_large)
-
-      #concat conv2D_prob_large -- CBL_left_large -- CBL_center_large -- conv2D_class_large  , out: 20 x 20 x 85
+      #concat CBS_prob_large -- CBL_left_large -- CBL_center_large -- CBS_left_ratio_large -- CBS_center_ratio_large -- CBS_class_large  , out: 20 x 20 x 89
       #large_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_large,CBL_left_large,CBL_center_large,CBL_class_large],axis=-1)
       
       #**************** output large ****************
       
       #output_large = self.conv2D_large(large_concat)
-      output_large = tf.keras.layers.concatenate(inputs=[conv2D_prob_large,CBL_left_large,CBL_center_large,conv2D_class_large],axis=-1,name="output_large")
+      output_large = tf.keras.layers.concatenate(inputs=[CBS_prob_large,CBL_left_large,CBL_center_large,CBS_left_ratio_large,CBS_center_ratio_large,CBS_class_large],axis=-1,name="output_large")
 
       #**************** output large ****************
 

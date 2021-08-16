@@ -7,6 +7,7 @@ import numpy as np
 import json
 import cv2
 import os
+import time
 
 
 @tf.function
@@ -280,9 +281,10 @@ if __name__ == "__main__":
 
    model = load_model(model_path)
 
-   
+   start = time.time()
    for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.8,diou_threshold=0.4,batch_size=1):
 
-      print("ok")
+      print(f"FPS: {1/(time.time()-start)}")
+      start = time.time()
  
 
