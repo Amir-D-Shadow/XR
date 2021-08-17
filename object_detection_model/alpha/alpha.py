@@ -388,7 +388,7 @@ class alpha_model(tf.keras.Model):
 
       #----------------------------------------------------------------
 
-      #decouple head -- small object , in : 80 x 80 x 256  out: 80 x 80 x (1 + 2 + 2 + 2 + 2 + 80)
+      #decouple head -- small object , in : 80 x 80 x 256  out: 80 x 80 x (1 + 2 + 2 + 80)
 
       #reg
       self.TCBL_reg_small  = TCBL(256,1,1,"valid")
@@ -396,16 +396,7 @@ class alpha_model(tf.keras.Model):
       self.CBL_left_small = CBL(2,3,1,"same")
 
       self.CBL_center_small = CBL(2,3,1,"same")
-
-      self.CBL_left_ratio_small = CBL(2,3,1,"same")
-
-      self.CBL_center_ratio_small = CBL(2,3,1,"same")
-
-      self.CBS_left_ratio_small = CBS(2,1,1,"same")
-
-      self.CBS_center_ratio_small = CBS(2,1,1,"same")
       
-
       #class + prob
       self.TCBL_clsp_small  = TCBL(256,1,1,"valid")
 
@@ -417,7 +408,7 @@ class alpha_model(tf.keras.Model):
 
       self.CBS_class_small =  CBS(80,1,1,"same")
 
-      #concat CBS_prob_small -- CBL_left_small -- CBL_center_small -- CBS_left_ratio_small -- CBS_center_ratio_small -- CBS_class_small  , out: 80 x 80 x 89
+      #concat CBS_prob_small -- CBL_left_small -- CBL_center_small -- CBS_class_small  , out: 80 x 80 x 85
 
       #output small
       #self.conv2D_small = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_small")
@@ -457,14 +448,6 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_center_medium = CBL(2,3,1,"same")
 
-      self.CBL_left_ratio_medium = CBL(2,3,1,"same")
-
-      self.CBL_center_ratio_medium = CBL(2,3,1,"same")
-
-      self.CBS_left_ratio_medium = CBS(2,1,1,"same")
-
-      self.CBS_center_ratio_medium = CBS(2,1,1,"same")
-
       #class + prob
       self.TCBL_clsp_medium  = TCBL(256,2,1,"valid")
 
@@ -476,7 +459,7 @@ class alpha_model(tf.keras.Model):
 
       self.CBS_class_medium =  CBS(80,1,1,"same")
       
-      #concat CBS_prob_medium  -- CBL_left_medium -- CBL_center_medium -- CBS_left_ratio_medium -- CBS_center_ratio_medium -- CBS_class_medium  , out: 40 x 40 x 89
+      #concat CBS_prob_medium  -- CBL_left_medium -- CBL_center_medium -- CBS_class_medium  , out: 40 x 40 x 85
       
       #output medium
       #self.conv2D_medium = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_medium")
@@ -515,14 +498,6 @@ class alpha_model(tf.keras.Model):
 
       self.CBL_center_large = CBL(2,3,1,"same")
 
-      self.CBL_left_ratio_large = CBL(2,3,1,"same")
-
-      self.CBL_center_ratio_large = CBL(2,3,1,"same")
-
-      self.CBS_left_ratio_large = CBS(2,1,1,"same")
-
-      self.CBS_center_ratio_large = CBS(2,1,1,"same")
-
       #class + prob
       self.TCBL_clsp_large  = TCBL(512,2,1,"valid")
 
@@ -534,7 +509,7 @@ class alpha_model(tf.keras.Model):
 
       self.CBS_class_large =  CBS(80,1,1,"same")
 
-      #concat CBS_prob_large -- CBL_left_large -- CBL_center_large -- CBS_left_ratio_large -- CBS_center_ratio_large -- CBS_class_large  , out: 20 x 20 x 89
+      #concat CBS_prob_large -- CBL_left_large -- CBL_center_large -- CBS_class_large  , out: 20 x 20 x 85
       
       #output large
       #self.conv2D_large = tf.keras.layers.Conv2D(85,1,1,padding="same",data_format = "channels_last",name="output_large")
@@ -621,14 +596,6 @@ class alpha_model(tf.keras.Model):
 
       CBL_center_small = self.CBL_center_small(TCBL_reg_small,train_flag)
 
-      CBL_left_ratio_small = self.CBL_left_ratio_small(TCBL_reg_small,train_flag)
-      
-      CBL_center_ratio_small = self.CBL_center_ratio_small(TCBL_reg_small,train_flag)
-
-      CBS_left_ratio_small  = self.CBS_left_ratio_small(CBL_left_ratio_small,train_flag)
-
-      CBS_center_ratio_small = self.CBS_center_ratio_small(CBL_center_ratio_small,train_flag)
-
       #class + prob -- small
       TCBL_clsp_small = self.TCBL_clsp_small(rCSP3,train_flag)
 
@@ -640,13 +607,13 @@ class alpha_model(tf.keras.Model):
 
       CBS_class_small = self.CBS_class_small(CBL_class_small,train_flag)
       
-      #concat CBS_prob_small -- CBL_left_small -- CBL_center_small -- CBS_left_ratio_small -- CBS_center_ratio_small -- CBS_class_small  , out: 80 x 80 x 89
+      #concat CBS_prob_small -- CBL_left_small -- CBL_center_small -- CBS_class_small  , out: 80 x 80 x 85
       #small_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_small,CBL_left_small,CBL_center_small,CBL_class_small],axis=-1)
 
       #**************** output small ****************
       
       #output_small = self.conv2D_small(small_concat)
-      output_small = tf.keras.layers.concatenate(inputs=[CBS_prob_small,CBL_left_small,CBL_center_small,CBS_left_ratio_small,CBS_center_ratio_small,CBS_class_small],axis=-1,name="output_small")
+      output_small = tf.keras.layers.concatenate(inputs=[CBS_prob_small,CBL_left_small,CBL_center_small,CBS_class_small],axis=-1,name="output_small")
       
       #**************** output small ****************
 
@@ -668,13 +635,6 @@ class alpha_model(tf.keras.Model):
 
       CBL_center_medium = self.CBL_center_medium(TCBL_reg_medium,train_flag)
 
-      CBL_left_ratio_medium = self.CBL_left_ratio_medium(TCBL_reg_medium,train_flag)
-
-      CBL_center_ratio_medium = self.CBL_center_ratio_medium(TCBL_reg_medium,train_flag)
-
-      CBS_left_ratio_medium = self.CBS_left_ratio_medium(CBL_left_ratio_medium,train_flag)
-
-      CBS_center_ratio_medium = self.CBS_center_ratio_medium(CBL_center_ratio_medium,train_flag)
 
       #class + prob -- medium
       TCBL_clsp_medium = self.TCBL_clsp_medium(rCSP4,train_flag)
@@ -688,13 +648,13 @@ class alpha_model(tf.keras.Model):
       CBS_class_medium = self.CBS_class_medium(CBL_class_medium,train_flag)
 
 
-      #concat CBS_prob_medium  -- CBL_left_medium -- CBL_center_medium -- CBS_left_ratio_medium -- CBS_center_ratio_medium -- CBS_class_medium  , out: 40 x 40 x 89
+      #concat CBS_prob_medium  -- CBL_left_medium -- CBL_center_medium -- CBS_class_medium  , out: 40 x 40 x 85
       #medium_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_medium,CBL_left_medium,CBL_center_medium,CBL_class_medium],axis=-1)
       
       #**************** output medium ****************
       
       #output_medium = self.conv2D_medium(medium_concat)
-      output_medium = tf.keras.layers.concatenate(inputs=[CBS_prob_medium,CBL_left_medium,CBL_center_medium,CBS_left_ratio_medium,CBS_center_ratio_medium,CBS_class_medium],axis=-1,name="output_medium")
+      output_medium = tf.keras.layers.concatenate(inputs=[CBS_prob_medium,CBL_left_medium,CBL_center_medium,CBS_class_medium],axis=-1,name="output_medium")
 
       #**************** output medium ****************
 
@@ -716,14 +676,6 @@ class alpha_model(tf.keras.Model):
 
       CBL_center_large = self.CBL_center_large(TCBL_reg_large,train_flag)
 
-      CBL_left_ratio_large = self.CBL_left_ratio_large(TCBL_reg_large,train_flag)
-
-      CBL_center_ratio_large = self.CBL_center_ratio_large(TCBL_reg_large,train_flag)
-
-      CBS_left_ratio_large = self.CBS_left_ratio_large(CBL_left_ratio_large,train_flag)
-
-      CBS_center_ratio_large = self.CBS_center_ratio_large(CBL_center_ratio_large,train_flag)
-
       #class + prob -- large
       TCBL_clsp_large = self.TCBL_clsp_large(rCSP5,train_flag)
 
@@ -735,13 +687,13 @@ class alpha_model(tf.keras.Model):
 
       CBS_class_large = self.CBS_class_large(CBL_class_large,train_flag)
 
-      #concat CBS_prob_large -- CBL_left_large -- CBL_center_large -- CBS_left_ratio_large -- CBS_center_ratio_large -- CBS_class_large  , out: 20 x 20 x 89
+      #concat CBS_prob_large -- CBL_left_large -- CBL_center_large -- CBS_class_large  , out: 20 x 20 x 85
       #large_concat = tf.keras.layers.concatenate(inputs=[CBL_prob_large,CBL_left_large,CBL_center_large,CBL_class_large],axis=-1)
       
       #**************** output large ****************
       
       #output_large = self.conv2D_large(large_concat)
-      output_large = tf.keras.layers.concatenate(inputs=[CBS_prob_large,CBL_left_large,CBL_center_large,CBS_left_ratio_large,CBS_center_ratio_large,CBS_class_large],axis=-1,name="output_large")
+      output_large = tf.keras.layers.concatenate(inputs=[CBS_prob_large,CBL_left_large,CBL_center_large,CBS_class_large],axis=-1,name="output_large")
 
       #**************** output large ****************
 

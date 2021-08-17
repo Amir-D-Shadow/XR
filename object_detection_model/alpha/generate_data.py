@@ -121,9 +121,9 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
 
 
       #initialize y_true extra dim will be removed when it is saved (it is used for overlap region checking)
-      obj_small_true = np.zeros((80,80,91))
-      obj_medium_true = np.zeros((40,40,91))
-      obj_large_true = np.zeros((20,20,91))
+      obj_small_true = np.zeros((80,80,87))
+      obj_medium_true = np.zeros((40,40,87))
+      obj_large_true = np.zeros((20,20,87))
 
       #obj_small_true = np.zeros((16,16,91))
       #obj_medium_true = np.zeros((8,8,91))
@@ -182,35 +182,27 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
       h_pos = int(step_h * ycenter)
       w_pos = int(step_w * xcenter)
 
-      if (obj_small_true[h_pos,w_pos,-2] < 2) :
+      if (obj_small_true[h_pos,w_pos,-2] == 0) :
       
          #prob
          obj_small_true[h_pos,w_pos,0] = 1
 
          #xmin,ymin
-         obj_small_true[h_pos,w_pos,1] = xmin + obj_small_true[h_pos,w_pos,1]
-         obj_small_true[h_pos,w_pos,2] = ymin + obj_small_true[h_pos,w_pos,2]
-
-         #xmin ymin ratio
-         obj_small_true[h_pos,w_pos,5] = xmin / obj_small_true[h_pos,w_pos,1]
-         obj_small_true[h_pos,w_pos,6] = ymin / obj_small_true[h_pos,w_pos,2]
+         obj_small_true[h_pos,w_pos,1] = xmin 
+         obj_small_true[h_pos,w_pos,2] = ymin 
 
          #xcenter,ycenter
-         obj_small_true[h_pos,w_pos,3] = xcenter + obj_small_true[h_pos,w_pos,3]
-         obj_small_true[h_pos,w_pos,4] = ycenter + obj_small_true[h_pos,w_pos,4]
-
-         #xcenter ycenter ratio
-         obj_small_true[h_pos,w_pos,7] = xcenter / obj_small_true[h_pos,w_pos,3]
-         obj_small_true[h_pos,w_pos,8] = ycenter / obj_small_true[h_pos,w_pos,4]
+         obj_small_true[h_pos,w_pos,3] = xcenter 
+         obj_small_true[h_pos,w_pos,4] = ycenter 
 
          #class
-         obj_small_true[h_pos,w_pos,9+class_id] = 1
+         obj_small_true[h_pos,w_pos,5+class_id] = 1
 
          #label center
-         obj_small_true[h_pos,w_pos,-2] = obj_small_true[h_pos,w_pos,-2] + 1 
+         obj_small_true[h_pos,w_pos,-2] =  1 
 
          #label occupied cells
-         obj_small_true[h_pos,w_pos,-1] = obj_small_true[h_pos,w_pos,-1] + 1
+         obj_small_true[h_pos,w_pos,-1] =  1
 
          #multiple positive
          obj_small_true = multiple_positive_labeling(obj_small_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
@@ -224,35 +216,27 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
       h_pos = int(step_h * ycenter)
       w_pos = int(step_w * xcenter) 
 
-      if (obj_medium_true[h_pos,w_pos,-2] < 2):
+      if (obj_medium_true[h_pos,w_pos,-2] == 0):
          
          #prob
          obj_medium_true[h_pos,w_pos,0] = 1
 
          #xmin,ymin
-         obj_medium_true[h_pos,w_pos,1] = xmin + obj_medium_true[h_pos,w_pos,1]
-         obj_medium_true[h_pos,w_pos,2] = ymin + obj_medium_true[h_pos,w_pos,2]
-
-         #xmin ymin ratio
-         obj_medium_true[h_pos,w_pos,5] = xmin / obj_medium_true[h_pos,w_pos,1]
-         obj_medium_true[h_pos,w_pos,6] = ymin / obj_medium_true[h_pos,w_pos,2]
+         obj_medium_true[h_pos,w_pos,1] = xmin 
+         obj_medium_true[h_pos,w_pos,2] = ymin 
 
          #xcenter,ycenter
-         obj_medium_true[h_pos,w_pos,3] = xcenter + obj_medium_true[h_pos,w_pos,3]
-         obj_medium_true[h_pos,w_pos,4] = ycenter + obj_medium_true[h_pos,w_pos,4]
-
-         #xcenter,ycenter ratio
-         obj_medium_true[h_pos,w_pos,7] = xcenter / obj_medium_true[h_pos,w_pos,3]
-         obj_medium_true[h_pos,w_pos,8] = ycenter / obj_medium_true[h_pos,w_pos,4]
+         obj_medium_true[h_pos,w_pos,3] = xcenter 
+         obj_medium_true[h_pos,w_pos,4] = ycenter 
 
          #class
-         obj_medium_true[h_pos,w_pos,9+class_id] = 1
+         obj_medium_true[h_pos,w_pos,5+class_id] = 1
 
          #label center
-         obj_medium_true[h_pos,w_pos,-2] = obj_medium_true[h_pos,w_pos,-2] + 1 
+         obj_medium_true[h_pos,w_pos,-2] = 1 
 
          #label occupied cells
-         obj_medium_true[h_pos,w_pos,-1] = obj_medium_true[h_pos,w_pos,-1] + 1
+         obj_medium_true[h_pos,w_pos,-1] = 1
 
          #multiple positive
          obj_medium_true = multiple_positive_labeling(obj_medium_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
@@ -266,35 +250,27 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
       h_pos = int(step_h * ycenter)
       w_pos = int(step_w * xcenter)
 
-      if (obj_large_true[h_pos,w_pos,-2] < 2) :
+      if (obj_large_true[h_pos,w_pos,-2] == 0) :
       
          #prob
          obj_large_true[h_pos,w_pos,0] = 1
 
          #xmin,ymin
-         obj_large_true[h_pos,w_pos,1] = xmin + obj_large_true[h_pos,w_pos,1]
-         obj_large_true[h_pos,w_pos,2] = ymin + obj_large_true[h_pos,w_pos,2]
-
-         #xmin ymin ratio
-         obj_large_true[h_pos,w_pos,5] = xmin / obj_large_true[h_pos,w_pos,1]
-         obj_large_true[h_pos,w_pos,6] = ymin / obj_large_true[h_pos,w_pos,2]
+         obj_large_true[h_pos,w_pos,1] = xmin 
+         obj_large_true[h_pos,w_pos,2] = ymin 
 
          #xcenter,ycenter
-         obj_large_true[h_pos,w_pos,3] = xcenter + obj_large_true[h_pos,w_pos,3]
-         obj_large_true[h_pos,w_pos,4] = ycenter + obj_large_true[h_pos,w_pos,4]
-
-         #xcenter,ycenter ratio
-         obj_large_true[h_pos,w_pos,7] = xcenter / obj_large_true[h_pos,w_pos,3]
-         obj_large_true[h_pos,w_pos,8] = ycenter / obj_large_true[h_pos,w_pos,4]
+         obj_large_true[h_pos,w_pos,3] = xcenter 
+         obj_large_true[h_pos,w_pos,4] = ycenter 
 
          #class
-         obj_large_true[h_pos,w_pos,9+class_id] = 1
+         obj_large_true[h_pos,w_pos,5+class_id] = 1
 
          #label center
-         obj_large_true[h_pos,w_pos,-2] = obj_large_true[h_pos,w_pos,-2] + 1
+         obj_large_true[h_pos,w_pos,-2] =  1
 
          #label occupied cells
-         obj_large_true[h_pos,w_pos,-1] = obj_large_true[h_pos,w_pos,-1] + 1
+         obj_large_true[h_pos,w_pos,-1] =  1
 
          #multiple positive
          obj_large_true = multiple_positive_labeling(obj_large_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
@@ -320,7 +296,7 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
 
       for h_pos in range(h_pos_init,h_max):
 
-         if (y_true[h_pos,w_pos,-2] == 0) and (y_true[h_pos,w_pos,-1] < 2):
+         if (y_true[h_pos,w_pos,-2] == 0) and (y_true[h_pos,w_pos,-1] == 0):
 
             #prob
             y_true[h_pos,w_pos,0] = 1
@@ -329,23 +305,15 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
             y_true[h_pos,w_pos,1] = xmin + y_true[h_pos,w_pos,1] 
             y_true[h_pos,w_pos,2] = ymin + y_true[h_pos,w_pos,2]
 
-            #xmin,ymin ratio
-            y_true[h_pos,w_pos,5] = xmin / y_true[h_pos,w_pos,1] 
-            y_true[h_pos,w_pos,6] = ymin / y_true[h_pos,w_pos,2]
-
             #xcenter,ycenter
             y_true[h_pos,w_pos,3] = xcenter + y_true[h_pos,w_pos,3]
             y_true[h_pos,w_pos,4] = ycenter + y_true[h_pos,w_pos,4]
 
-            #xcenter,ycenter ratio
-            y_true[h_pos,w_pos,7] = xcenter / y_true[h_pos,w_pos,3]
-            y_true[h_pos,w_pos,8] = ycenter / y_true[h_pos,w_pos,4]
-
             #class
-            y_true[h_pos,w_pos,9+class_id] = 1
+            y_true[h_pos,w_pos,5+class_id] = 1
 
             #label occupied cells
-            y_true[h_pos,w_pos,-1] = y_true[h_pos,w_pos,-1] + 1
+            y_true[h_pos,w_pos,-1] =  1
 
 
    return y_true
