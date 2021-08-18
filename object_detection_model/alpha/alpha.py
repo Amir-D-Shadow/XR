@@ -169,7 +169,7 @@ class alpha_model(tf.keras.Model):
       #----------------------------------------------------------------
 
       #spatialdropout_1 in : 79 x 79 x 256 out : 79 x 79 x 256 , ( branch 1 -- out : 79 x 79 x 256 )
-      self.SPA_drop_1 = tf.keras.layers.SpatialDropout2D(rate = 0.5,data_format="channels_last")
+      self.SPA_drop_1 = tf.keras.layers.SpatialDropout2D(rate = 0,data_format="channels_last")
 
       #----------------------------------------------------------------
 
@@ -244,7 +244,7 @@ class alpha_model(tf.keras.Model):
       #----------------------------------------------------------------
 
       #spatialdropout_2 in : 39 x 39 x 512 out : 39 x 39 x 512 , ( branch 2 -- out : 39 x 39 x 512 )
-      self.SPA_drop_2 = tf.keras.layers.SpatialDropout2D(rate = 0.5,data_format="channels_last")
+      self.SPA_drop_2 = tf.keras.layers.SpatialDropout2D(rate = 0,data_format="channels_last")
 
       #----------------------------------------------------------------
 
@@ -298,7 +298,7 @@ class alpha_model(tf.keras.Model):
       #----------------------------------------------------------------
 
       #spatialdropout_3 in : 19 x 19 x 1024  out : 19 x 19 x 1024
-      self.SPA_drop_3 = tf.keras.layers.SpatialDropout2D(rate = 0.5,data_format="channels_last")
+      self.SPA_drop_3 = tf.keras.layers.SpatialDropout2D(rate = 0,data_format="channels_last")
 
       #----------------------------------------------------------------
 
