@@ -43,10 +43,10 @@ def get_image_generator(batch_size,image_path,standard_shape=(640,640)):
       for name in batch_filename_list:
          
          #read image
-         img = cv2.imread(f"{image_path}/{name}")
+         img = cv2.imread(f"{image_path}/{name}").astype(np.float64)
 
          #normalize image
-         img = img / np.float64(255)
+         #img = img / np.float64(255)
 
          #pad image
          img = preprocess_data.preprocess_image(img,standard_shape)
@@ -73,8 +73,9 @@ def predict(model,image_path,result_path,reversed_class_map,class_color_map,conf
       #analysis and draw data
       for i in range(batch_size):
 
+         img = img_data[i].copy()
          #de-normalized
-         img = img_data[i].copy()  * np.float64(255)
+         #img = img_data[i].copy()  * np.float64(255)
 
          #large object
          large_obj = y[0][i].numpy()

@@ -7,9 +7,10 @@ import cv2
 import random
 import preprocess_data
 import time
+import data_augment
 
 #generator
-def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),standard_scale=(19360,66930)):
+def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),standard_scale=(19360,66930),aug_flag=False):
 
    """
    #img_shape -- (height,width)
@@ -41,7 +42,7 @@ def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),st
 
 
       #get image data -- np.array
-      img_data = get_image_data(name_list,img_path,img_shape)
+      img_data = get_image_data(name_list,img_path,img_shape,aug_flag)
 
       #get y_true data -- tuple (np.array,np.array,np.array)
       label = get_y_true(name_list,img_info,class_info,img_shape,standard_scale)
@@ -76,7 +77,7 @@ def get_gt_data(batch_size,img_list_shuffled,img_info,class_info,img_path,img_sh
    return img_data,label
 """
       
-def get_image_data(name_list,img_path,img_shape=(640,640)):
+def get_image_data(name_list,img_path,img_shape=(640,640),aug_flag=False):
 
    """
    return numpy.ndarray
@@ -93,6 +94,10 @@ def get_image_data(name_list,img_path,img_shape=(640,640)):
       img = preprocess_data.preprocess_image(img,img_shape)
 
       #img = cv2.resize(img,(128,128))
+      #data augmentation
+      if aug_flag:
+
+         img = data_augment.data_aug(img)
 
       #save img
       img_data.append(img)
@@ -340,7 +345,7 @@ if __name__ == "__main__":
 
    i = 0
    ctime = time.time()
-   for img_data,label in get_gt_data(8,gt_dataset,class_info,f"{os.getcwd()}/images"):
+   for img_data,label in get_gt_data(8,gt_dataset,class_info,f"{os.getcwd()}/images",aug_flag=True):
 
       print(img_data.shape)
 
