@@ -47,12 +47,12 @@ def data_aug(img):
 
    elif idx == 3:
 
-      h = np.random.randint(8,81)
-      w = np.random.randint(8,81)
+      for i in range(16):
 
-      kernel_size = (h,w)
+         h = np.random.randint(8,81)
+         w = np.random.randint(8,81)
 
-      for i in range(12):
+         kernel_size = (h,w)
 
          img = random_erase(img,kernel_size)
 
