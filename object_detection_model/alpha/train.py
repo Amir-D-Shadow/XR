@@ -7,31 +7,6 @@ import preprocess_data
 import random
 import os
 
-#step function
-@tf.function
-def distributed_train_step(data_inputs):
-
-   per_replica_losses = strategy.run(train_step,args=(data_inputs,))
-
-   return strategy.reduce(tf.distribute.ReduceOp.SUM,per_replica_losses,axis=None)
-
-
-def train_step(inputs):
-
-   images,labels = inputs
-
-   with tf.GradientTape() as tape:
-
-      predictions = model(images,train_flag=True)
-      
-      loss = compute_loss(labels,predictions)
-
-   gradients = tape.gradient(loss,model.trainable_variables)
-
-   optimizer.apply_gradients(zip(gradients,model.trainable_variables))
-
-   return loss
-
 #find current path
 cur_path = os.getcwd()
 
@@ -65,12 +40,39 @@ with strategy.scope():
    lr_scheduler = tf.keras.optimizers.schedules.CosineDecay(initial_learning_rate=0.001,decay_steps=10,alpha=1e-5)
    
    #define optimizer
-   optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler)
+   #optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler)
+   optimizer = tf.keras.optimizers.Adam()
 
    #define model
    #model = tf.keras.models.load_model(f"{cur_path}/gdrive/MyDrive/model")
    model = alpha_model()
    
+
+#step function -- train
+@tf.function
+def distributed_train_step(data_inputs):
+
+   per_replica_losses = strategy.run(train_step,args=(data_inputs,))
+
+   return strategy.reduce(tf.distribute.ReduceOp.SUM,per_replica_losses,axis=None)
+
+
+def train_step(inputs):
+
+   images,labels = inputs
+
+   with tf.GradientTape() as tape:
+
+      predictions = model(images,train_flag=True)
+      
+      loss = compute_loss(labels,predictions)
+
+   gradients = tape.gradient(loss,model.trainable_variables)
+
+   optimizer.apply_gradients(zip(gradients,model.trainable_variables))
+
+   return loss
+
 
 #set up
 batch_size_per_replica = 2
@@ -105,6 +107,8 @@ buffer_size = global_batch_size * 2
 #total step per epochs
 total_step_per_epoch = int(m/buffer_size)
 
+#data augmentation
+aug_flag = True
 
 #train
 for i  in range(EPOCHS):
@@ -112,7 +116,7 @@ for i  in range(EPOCHS):
    total_loss = 0.0
 
    #get data 
-   for train_images, train_labels in generate_data.get_gt_data(buffer_size,img_train_info,class_train_info,img_train_path,img_shape,standard_scale):
+   for train_images, train_labels in generate_data.get_gt_data(buffer_size,img_train_info,class_train_info,img_train_path,img_shape,standard_scale,aug_flag):
 
       #normalize the image to 0 to 1
       train_images = train_images/ np.float64(255)
