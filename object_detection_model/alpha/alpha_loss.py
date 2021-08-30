@@ -72,39 +72,44 @@ class alpha_loss(tf.keras.losses.Loss):
     reg_height_true = reg_wh_true[:,:,:,1:2]
     reg_height_pred = reg_wh_pred[:,:,:,1:2]
 
-    #****************** IOU loss ******************
+    #****************** Box Scale Entropy ******************
+    
+    #calculate mini width
+    reg_width_mini = tf.math.minimum(reg_width_true,reg_width_pred)
+    
+    #calculate max width
+    reg_width_max = tf.math.maximum(reg_width_true,reg_width_pred)
+    
+    ######
+    #reg_width_max = tf.clip_by_value(reg_width_max,clip_value_min = 0 ,clip_value_max=640 )
+
+    #calculate width scale
+    reg_width_scale = tf.math.sqrt( 1 - (reg_width_mini[:,:,:,:] / ( reg_width_max[:,:,:,:] + 1e-7) ) )
 
     #----------------------------------------------------------------------
-    #calculate IOU  
+    
+    #calculate mini height
+    reg_height_mini = tf.math.minimum(reg_height_true,reg_height_pred)
 
-    #calculate intersection width
-    reg_width_intersection = tf.math.minimum(reg_width_true,reg_width_pred)
+    #calculate max height
+    reg_height_max = tf.math.maximum(reg_height_true,reg_height_pred)
 
-    #calculate intersection height
-    reg_height_intersection = tf.math.minimum(reg_height_true,reg_height_pred)
+    ######
+    #reg_height_max = tf.clip_by_value(reg_height_max,clip_value_min = 0 ,clip_value_max=640 )
 
-    #intersection area
-    intersection_area = reg_width_intersection[:,:,:,:] * reg_height_intersection[:,:,:,:]
-
-    #union area
-    true_area = reg_wh_true[:,:,:,0:1] * reg_wh_true[:,:,:,1:2]
-    pred_area = reg_wh_pred[:,:,:,0:1] * reg_wh_pred[:,:,:,1:2]
-
-    union_area = true_area[:,:,:,:] + pred_area[:,:,:,:] - intersection_area[:,:,:,:]
-
-    #calculate iou 
-    iou_val = intersection_area[:,:,:,:] / ( union_area[:,:,:,:] +  1e-10 )
+    #calculate height scale
+    reg_height_scale = tf.math.sqrt( 1 - (reg_height_mini[:,:,:,:] / ( reg_height_max[:,:,:,:] + 1e-7 ) ) )
 
     #----------------------------------------------------------------------
-    loss_tensor_iou = (1 - iou_val[:,:,:,:])*object_mask[:,:,:,:]
 
-    #iou loss
-    iou_loss = K.sum(loss_tensor_iou) / m
+    #Box Scale Entropy
+    loss_tensor_Box_Scale_Entropy = reg_width_scale[:,:,:,:] * reg_height_scale[:,:,:,:]
+    
 
-    #****************** IOU loss ******************
+    #****************** Box Scale Entropy ******************
 
     #****************** Loc loss ******************
-    loss_tensor_loc = ( K.square(reg_left_true[:,:,:,:] - reg_left_pred[:,:,:,:]) + K.square(reg_center_true[:,:,:,:] - reg_center_pred[:,:,:,:]) ) * object_mask[:,:,:,:]
+    loss_tensor_loc = loss_tensor_Box_Scale_Entropy[:,:,:,:] * ( K.square(reg_left_true[:,:,:,:] - reg_left_pred[:,:,:,:]) + K.square(reg_center_true[:,:,:,:] - reg_center_pred[:,:,:,:]) ) * object_mask[:,:,:,:] 
 
     #loc loss
     loc_loss = K.sum(loss_tensor_loc) / m
@@ -112,10 +117,10 @@ class alpha_loss(tf.keras.losses.Loss):
     #****************** Loc loss ******************
 
     #calculate reg loss
-    reg_loss = loc_loss + iou_loss
+    reg_loss = loc_loss 
  
     #calculate loss
-    loss = prob_focal_loss + class_focal_loss + 5 * reg_loss
+    loss = prob_focal_loss + class_focal_loss + reg_loss
  
     return loss
 
