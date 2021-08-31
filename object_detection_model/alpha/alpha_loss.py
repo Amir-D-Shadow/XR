@@ -72,6 +72,7 @@ class alpha_loss(tf.keras.losses.Loss):
     reg_height_true = reg_wh_true[:,:,:,1:2]
     reg_height_pred = reg_wh_pred[:,:,:,1:2]
 
+    """
     #****************** Box Scale Entropy ******************
     
     #calculate mini width
@@ -107,9 +108,42 @@ class alpha_loss(tf.keras.losses.Loss):
     
 
     #****************** Box Scale Entropy ******************
+    """
+    #****************** IOU loss ******************
+    
+    #calculate IOU  
 
+    #calculate intersection width
+    reg_width_intersection = tf.math.minimum(reg_width_true,reg_width_pred)
+    
+    reg_width_intersection = K.maximum(reg_width_intersection,0.0)
+
+    #calculate intersection height
+    reg_height_intersection = tf.math.minimum(reg_height_true,reg_height_pred)
+
+    reg_height_intersection = K.maximum(reg_height_intersection,0.0)
+
+    #intersection area
+    intersection_area = reg_width_intersection[:,:,:,:] * reg_height_intersection[:,:,:,:]
+
+    #union area
+    true_area = reg_wh_true[:,:,:,0:1] * reg_wh_true[:,:,:,1:2]
+    pred_area = reg_wh_pred[:,:,:,0:1] * reg_wh_pred[:,:,:,1:2]
+
+    union_area = true_area[:,:,:,:] + pred_area[:,:,:,:] - intersection_area[:,:,:,:]
+
+    #calculate iou 
+    iou_val = intersection_area[:,:,:,:] / ( union_area[:,:,:,:] +  1e-10 )
+
+    #iou loss
+    loss_tensor_iou = - tf.math.log( iou_val[:,:,:,:] + 1e-18 ) * object_mask[:,:,:,:] 
+
+    iou_loss = K.sum( loss_tensor_iou ) / m
+
+    #****************** IOU loss ******************
+    
     #****************** Loc loss ******************
-    loss_tensor_loc = loss_tensor_Box_Scale_Entropy[:,:,:,:] * ( K.square(reg_left_true[:,:,:,:] - reg_left_pred[:,:,:,:]) + K.square(reg_center_true[:,:,:,:] - reg_center_pred[:,:,:,:]) ) * object_mask[:,:,:,:] 
+    loss_tensor_loc = ( K.square(reg_left_true[:,:,:,:] - reg_left_pred[:,:,:,:]) + K.square(reg_center_true[:,:,:,:] - reg_center_pred[:,:,:,:]) ) * object_mask[:,:,:,:] 
 
     #loc loss
     loc_loss = K.sum(loss_tensor_loc) / m
@@ -117,7 +151,7 @@ class alpha_loss(tf.keras.losses.Loss):
     #****************** Loc loss ******************
 
     #calculate reg loss
-    reg_loss = loc_loss 
+    reg_loss = loc_loss + iou_loss
  
     #calculate loss
     loss = prob_focal_loss + class_focal_loss + reg_loss
