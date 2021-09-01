@@ -62,7 +62,11 @@ class alpha_loss(tf.keras.losses.Loss):
 
     #calculate width x height of anchor box
     reg_wh_true = (reg_center_true[:,:,:,:] - reg_left_true[:,:,:,:])*2
-    reg_wh_pred = (reg_center_pred[:,:,:,:] - reg_left_pred[:,:,:,:])*2 
+    reg_wh_pred = (reg_center_pred[:,:,:,:] - reg_left_pred[:,:,:,:])*2
+
+    #get reg right
+    reg_right_true = reg_left_true[:,:,:,:] + reg_wh_true[:,:,:,:]
+    reg_right_pred = reg_left_pred[:,:,:,:] + reg_wh_pred[:,:,:,:]
 
     #get reg width
     reg_width_true = reg_wh_true[:,:,:,0:1] 
@@ -72,59 +76,68 @@ class alpha_loss(tf.keras.losses.Loss):
     reg_height_true = reg_wh_true[:,:,:,1:2]
     reg_height_pred = reg_wh_pred[:,:,:,1:2]
 
-    """
+    
     #****************** Box Scale Entropy ******************
     
     #calculate mini width
     reg_width_mini = tf.math.minimum(reg_width_true,reg_width_pred)
+
+    reg_width_mini = K.square(reg_width_mini)
     
     #calculate max width
     reg_width_max = tf.math.maximum(reg_width_true,reg_width_pred)
+
+    reg_width_max = K.square(reg_width_max)
     
-    ######
-    #reg_width_max = tf.clip_by_value(reg_width_max,clip_value_min = 0 ,clip_value_max=640 )
 
     #calculate width scale
-    reg_width_scale = tf.math.sqrt( 1 - (reg_width_mini[:,:,:,:] / ( reg_width_max[:,:,:,:] + 1e-7) ) )
+    reg_width_scale = reg_width_mini[:,:,:,:] / ( reg_width_max[:,:,:,:] + 1e-10 ) 
 
     #----------------------------------------------------------------------
     
     #calculate mini height
     reg_height_mini = tf.math.minimum(reg_height_true,reg_height_pred)
 
+    reg_height_mini = K.square(reg_height_mini)
+
     #calculate max height
     reg_height_max = tf.math.maximum(reg_height_true,reg_height_pred)
 
-    ######
-    #reg_height_max = tf.clip_by_value(reg_height_max,clip_value_min = 0 ,clip_value_max=640 )
+    reg_height_max = K.square(reg_height_max)
+
 
     #calculate height scale
-    reg_height_scale = tf.math.sqrt( 1 - (reg_height_mini[:,:,:,:] / ( reg_height_max[:,:,:,:] + 1e-7 ) ) )
+    reg_height_scale =  reg_height_mini[:,:,:,:] / ( reg_height_max[:,:,:,:] + 1e-10 )
 
     #----------------------------------------------------------------------
 
     #Box Scale Entropy
-    loss_tensor_Box_Scale_Entropy = reg_width_scale[:,:,:,:] * reg_height_scale[:,:,:,:]
+    loss_tensor_Box_Scale_Entropy = - tf.math.log(reg_width_scale[:,:,:,:] + 1e-18)  -  tf.math.log(reg_height_scale[:,:,:,:] + 1e-18)
+
+    box_scale_entropy_loss = K.sum(loss_tensor_Box_Scale_Entropy[:,:,:,:] * object_mask[:,:,:,:] ) / m
     
 
     #****************** Box Scale Entropy ******************
-    """
+    
     #****************** IOU loss ******************
     
     #calculate IOU  
 
-    #calculate intersection width
-    reg_width_intersection = tf.math.minimum(reg_width_true,reg_width_pred)
-    
-    reg_width_intersection = K.maximum(reg_width_intersection,0.0)
+    #calculate intersection left
+    reg_left_intersection = tf.math.maximum(reg_left_true,reg_left_pred)
 
-    #calculate intersection height
-    reg_height_intersection = tf.math.minimum(reg_height_true,reg_height_pred)
+    #calculate intersection right
+    reg_right_intersection = tf.math.minimum(reg_right_true,reg_right_pred)
 
-    reg_height_intersection = K.maximum(reg_height_intersection,0.0)
+    #calibrate
+    #reg_right_intersection = tf.where((reg_left_intersection>reg_right_intersection),reg_left_intersection,reg_right_intersection) #-- same meaning
+    reg_right_intersection = tf.math.maximum(reg_left_intersection,reg_right_intersection) #-- same meaning
+
+    #intersection width height
+    intersection_wh = reg_right_intersection[:,:,:,:] - reg_left_intersection[:,:,:,:]
 
     #intersection area
-    intersection_area = reg_width_intersection[:,:,:,:] * reg_height_intersection[:,:,:,:]
+    intersection_area = intersection_wh[:,:,:,0:1] * intersection_wh[:,:,:,1:2]
 
     #union area
     true_area = reg_wh_true[:,:,:,0:1] * reg_wh_true[:,:,:,1:2]
@@ -151,7 +164,7 @@ class alpha_loss(tf.keras.losses.Loss):
     #****************** Loc loss ******************
 
     #calculate reg loss
-    reg_loss = loc_loss + iou_loss
+    reg_loss = loc_loss + iou_loss + box_scale_entropy_loss
  
     #calculate loss
     loss = prob_focal_loss + class_focal_loss + reg_loss

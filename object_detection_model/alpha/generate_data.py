@@ -8,9 +8,10 @@ import random
 import preprocess_data
 import time
 import data_augment
+from Kmean import Kmean_IOU
 
 #generator
-def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),standard_scale=(19360,66930),aug_flag=False):
+def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),aug_flag=False):
 
    """
    #img_shape -- (height,width)
@@ -45,7 +46,7 @@ def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),st
       img_data = get_image_data(name_list,img_path,img_shape,aug_flag)
 
       #get y_true data -- tuple (np.array,np.array,np.array)
-      label = get_y_true(name_list,img_info,class_info,img_shape,standard_scale)
+      label = get_y_true(name_list,img_info,class_info,img_shape)
 
       #update remaining sample
       m = m - batch_size
@@ -53,29 +54,7 @@ def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),st
 
       yield img_data,label
 
-"""
-def get_gt_data(batch_size,img_list_shuffled,img_info,class_info,img_path,img_shape = (640,640),standard_scale=(8000,50000)):
-   
-   random.shuffle(img_list_shuffled)
-      
-   #get name list
-   name_list = []
 
-   for i in range(batch_size):
-
-      name_list.append(img_list_shuffled[i])
-
-      img_list_shuffled.remove(img_list_shuffled[i])
-
-
-   #get image data -- np.array
-   img_data = get_image_data(name_list,img_path,img_shape)
-
-   #get y_true data -- tuple (np.array,np.array,np.array)
-   label = get_y_true(name_list,img_info,class_info)
-
-   return img_data,label
-"""
       
 def get_image_data(name_list,img_path,img_shape=(640,640),aug_flag=False):
 
@@ -107,7 +86,7 @@ def get_image_data(name_list,img_path,img_shape=(640,640),aug_flag=False):
    return img_data
 
 
-def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scale=(19360,66930)):
+def get_y_true(name_list,img_info,class_info,img_shape = (640,640)):
 
    """
    name_list -- list
@@ -126,9 +105,9 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
 
 
       #initialize y_true extra dim will be removed when it is saved (it is used for overlap region checking)
-      obj_small_true = np.zeros((80,80,87))
-      obj_medium_true = np.zeros((40,40,87))
-      obj_large_true = np.zeros((20,20,87))
+      obj_small_true = np.zeros((80,80,85))
+      obj_medium_true = np.zeros((40,40,85))
+      obj_large_true = np.zeros((20,20,85))
 
       #obj_small_true = np.zeros((16,16,91))
       #obj_medium_true = np.zeros((8,8,91))
@@ -137,16 +116,27 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
       #get (obj_info -- list)
       obj_info = img_info[name]
 
-      #loop via all object in the image (obj -- list)
-      for obj in obj_info:
+      n = len(obj_info)
 
-         #update y_true
-         obj_small_true,obj_medium_true,obj_large_true = update_y_true(obj,class_info[obj[0]],obj_small_true,obj_medium_true,obj_large_true,img_shape,standard_scale)
-         
+      #initial bbox hw
+      bbox_hw = np.zeros((n,2))
+
+      #loop via all object in the image (obj -- list) to fill bbox_hw
+      for i in range(n):
+
+         bbox_hw[i,0] = (obj_info[i][4] - obj_info[i][2])*2
+         bbox_hw[i,1] = (obj_info[i][3] - obj_info[i][1])*2
+
+      #get cluster index
+      cluster_idx = Kmean_IOU(bbox_hw)
+      
+      #update y_true
+      obj_small_true,obj_medium_true,obj_large_true = update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640))
+      
       #save image info
-      small_true.append(obj_small_true[:,:,:-2])
-      medium_true.append(obj_medium_true[:,:,:-2])
-      large_true.append(obj_large_true[:,:,:-2])
+      small_true.append(obj_small_true[:,:,:])
+      medium_true.append(obj_medium_true[:,:,:])
+      large_true.append(obj_large_true[:,:,:])
 
    #convert y_true to numpy array
    small_true = np.array(small_true)
@@ -156,13 +146,13 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640),standard_scal
    return (large_true,medium_true,small_true)
 
    
-def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640),standard_scale=(19360,66930)):
+def update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640)):
 
    """
    obj -- list [class,xmin,ymin,xcenter,ycenter]
    img_shape -- (height,width)
    """
-
+   """
    _,xmin,ymin,xcenter,ycenter = obj
 
    #avoid x,y division by zeros for ratio calculation
@@ -178,109 +168,115 @@ def update_y_true(obj,class_id,obj_small_true,obj_medium_true,obj_large_true,img
    ymax = ymin + height
 
    area  = width * height
+   """
+   #update large obj
+   for i in cluster_idx[0]:
 
-   if (area < standard_scale[0]):
+      #get obj info
+      class_name,xmin,ymin,xcenter,ycenter = obj_info[i]
 
-      step_h = obj_small_true.shape[0] / img_shape[0]
-      step_w = obj_small_true.shape[1] / img_shape[1]
+      class_id = class_info[class_name]
 
-      h_pos = int(step_h * ycenter)
-      w_pos = int(step_w * xcenter)
+      xmax = (xcenter - xmin) * 2 + xmin
+      ymax = (ycenter - ymin) * 2 + ymin
 
-      if (obj_small_true[h_pos,w_pos,-2] == 0) :
-      
-         #prob
-         obj_small_true[h_pos,w_pos,0] = 1
-
-         #xmin,ymin
-         obj_small_true[h_pos,w_pos,1] = xmin 
-         obj_small_true[h_pos,w_pos,2] = ymin 
-
-         #xcenter,ycenter
-         obj_small_true[h_pos,w_pos,3] = xcenter 
-         obj_small_true[h_pos,w_pos,4] = ycenter 
-
-         #class
-         obj_small_true[h_pos,w_pos,5+class_id] = 1
-
-         #label center
-         obj_small_true[h_pos,w_pos,-2] =  1 
-
-         #label occupied cells
-         obj_small_true[h_pos,w_pos,-1] =  1
-
-         #multiple positive
-         obj_small_true = multiple_positive_labeling(obj_small_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
-         
-
-   elif (area > standard_scale[0]) and (area < standard_scale[1]):
-
-      step_h = obj_medium_true.shape[0] / img_shape[0]
-      step_w = obj_medium_true.shape[1] / img_shape[1]
-
-      h_pos = int(step_h * ycenter)
-      w_pos = int(step_w * xcenter) 
-
-      if (obj_medium_true[h_pos,w_pos,-2] == 0):
-         
-         #prob
-         obj_medium_true[h_pos,w_pos,0] = 1
-
-         #xmin,ymin
-         obj_medium_true[h_pos,w_pos,1] = xmin 
-         obj_medium_true[h_pos,w_pos,2] = ymin 
-
-         #xcenter,ycenter
-         obj_medium_true[h_pos,w_pos,3] = xcenter 
-         obj_medium_true[h_pos,w_pos,4] = ycenter 
-
-         #class
-         obj_medium_true[h_pos,w_pos,5+class_id] = 1
-
-         #label center
-         obj_medium_true[h_pos,w_pos,-2] = 1 
-
-         #label occupied cells
-         obj_medium_true[h_pos,w_pos,-1] = 1
-
-         #multiple positive
-         obj_medium_true = multiple_positive_labeling(obj_medium_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
-         
-
-   elif (area > standard_scale[1]) :
-
+      #set up
       step_h = obj_large_true.shape[0] / img_shape[0]
       step_w = obj_large_true.shape[1] / img_shape[1]
 
       h_pos = int(step_h * ycenter)
       w_pos = int(step_w * xcenter)
-
-      if (obj_large_true[h_pos,w_pos,-2] == 0) :
       
-         #prob
-         obj_large_true[h_pos,w_pos,0] = 1
+      #prob
+      obj_large_true[h_pos,w_pos,0] = 1
 
-         #xmin,ymin
-         obj_large_true[h_pos,w_pos,1] = xmin 
-         obj_large_true[h_pos,w_pos,2] = ymin 
+      #xmin,ymin
+      obj_large_true[h_pos,w_pos,1] = xmin 
+      obj_large_true[h_pos,w_pos,2] = ymin 
 
-         #xcenter,ycenter
-         obj_large_true[h_pos,w_pos,3] = xcenter 
-         obj_large_true[h_pos,w_pos,4] = ycenter 
+      #xcenter,ycenter
+      obj_large_true[h_pos,w_pos,3] = xcenter 
+      obj_large_true[h_pos,w_pos,4] = ycenter 
 
-         #class
-         obj_large_true[h_pos,w_pos,5+class_id] = 1
+      #class
+      obj_large_true[h_pos,w_pos,5+class_id] = 1
 
-         #label center
-         obj_large_true[h_pos,w_pos,-2] =  1
+      #multiple positive
+      obj_large_true = multiple_positive_labeling(obj_large_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
 
-         #label occupied cells
-         obj_large_true[h_pos,w_pos,-1] =  1
 
-         #multiple positive
-         obj_large_true = multiple_positive_labeling(obj_large_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
+   #update medium obj
+   for i in cluster_idx[1]:
+
+      #get obj info
+      class_name,xmin,ymin,xcenter,ycenter = obj_info[i]
+
+      class_id = class_info[class_name]
+
+      xmax = (xcenter - xmin) * 2 + xmin
+      ymax = (ycenter - ymin) * 2 + ymin
+
+      #set up
+      step_h = obj_medium_true.shape[0] / img_shape[0]
+      step_w = obj_medium_true.shape[1] / img_shape[1]
+
+      h_pos = int(step_h * ycenter)
+      w_pos = int(step_w * xcenter) 
          
+      #prob
+      obj_medium_true[h_pos,w_pos,0] = 1
 
+      #xmin,ymin
+      obj_medium_true[h_pos,w_pos,1] = xmin 
+      obj_medium_true[h_pos,w_pos,2] = ymin 
+
+      #xcenter,ycenter
+      obj_medium_true[h_pos,w_pos,3] = xcenter 
+      obj_medium_true[h_pos,w_pos,4] = ycenter 
+
+      #class
+      obj_medium_true[h_pos,w_pos,5+class_id] = 1
+
+      #multiple positive
+      obj_medium_true = multiple_positive_labeling(obj_medium_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
+
+
+   #update small obj
+   for i in cluster_idx[2]:
+
+      #get obj info
+      class_name,xmin,ymin,xcenter,ycenter = obj_info[i]
+
+      class_id = class_info[class_name]
+
+      xmax = (xcenter - xmin) * 2 + xmin
+      ymax = (ycenter - ymin) * 2 + ymin
+
+      #set up
+      step_h = obj_small_true.shape[0] / img_shape[0]
+      step_w = obj_small_true.shape[1] / img_shape[1]
+
+      h_pos = int(step_h * ycenter)
+      w_pos = int(step_w * xcenter)
+      
+      #prob
+      obj_small_true[h_pos,w_pos,0] = 1
+
+      #xmin,ymin
+      obj_small_true[h_pos,w_pos,1] = xmin 
+      obj_small_true[h_pos,w_pos,2] = ymin 
+
+      #xcenter,ycenter
+      obj_small_true[h_pos,w_pos,3] = xcenter 
+      obj_small_true[h_pos,w_pos,4] = ycenter 
+
+      #class
+      obj_small_true[h_pos,w_pos,5+class_id] = 1
+
+
+      #multiple positive
+      obj_small_true = multiple_positive_labeling(obj_small_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
+                 
    return obj_small_true,obj_medium_true,obj_large_true
 
             
@@ -291,17 +287,25 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
    y_true -- numpy array
    """
 
-   w_pos_init = int(xmin*step_w)
-   h_pos_init = int(ymin*step_h)
+   xlow = int(xmin*step_w)
+   ylow = int(ymin*step_h)
 
-   w_max = int(xmax*step_w)
-   h_max = int(ymax*step_h)
+   xhigh = int(xmax*step_w)
+   yhigh = int(ymax*step_h)
+   
+   w_pos_init = int(xcenter*step_w - 32*step_w)
+   h_pos_init = int(ycenter*step_h - 32*step_h)
+
+   w_max = int(w_pos_init + 3*32*step_w)
+   h_max = int(h_pos_init + 3*32*step_h)
+
+   n = 0
 
    for w_pos in range(w_pos_init,w_max):
 
       for h_pos in range(h_pos_init,h_max):
 
-         if (y_true[h_pos,w_pos,-2] == 0) and (y_true[h_pos,w_pos,-1] == 0):
+         if (n <= 9) and (y_true[h_pos,w_pos,0] == 0) and (w_pos > xlow) and (w_pos < xhigh) and (h_pos > ylow) and (h_pos < yhigh):
 
             #prob
             y_true[h_pos,w_pos,0] = 1
@@ -317,8 +321,8 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
             #class
             y_true[h_pos,w_pos,5+class_id] = 1
 
-            #label occupied cells
-            y_true[h_pos,w_pos,-1] =  1
+            #update n
+            n = n + 1
 
 
    return y_true
@@ -327,21 +331,20 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
 if __name__ == "__main__":
 
    cur_path = os.getcwd()
+   """
+   gt_dataset = preprocess_data.preprocessing_label(f"{cur_path}/annotations/train_annotations.csv",f"{cur_path}/data")
+
+   class_info =  preprocess_data.preprocess_class(f"{cur_path}/annotations/train_annotations.csv",f"{cur_path}/data")
+   """
+   file = open(f"{cur_path}/data/class_map.txt")
+   class_info = json.load(file)
+
+   file.close()
 
    file = open(f"{cur_path}/data/gt_dataset.txt")
    gt_dataset = json.load(file)
 
    file.close()
-
-   file = open(f"{cur_path}/data/class_map.txt")
-   class_info = json.load(file)
-
-   file.close()
-   """
-   name_list = ["000000001000_jpg.rf.a3c5a2484544de19f7cb041f2eb43605.jpg"]
-
-   label = get_y_true(name_list,gt_dataset,class_info)
-   """
 
    i = 0
    ctime = time.time()
@@ -351,26 +354,13 @@ if __name__ == "__main__":
 
       i = i + 1
 
-      if i > 10:
+      if i > 5:
 
          break
 
    print(time.time()-ctime)
    
-   """
-   img_list = list(gt_dataset.keys())
-   #random.shuffle(img_list)
-   
-   ctime = time.time()
-   
-   for i in range(8):
 
-      img_data,label =  get_gt_data(3,img_list,gt_dataset,class_info,f"{os.getcwd()}/img")
-
-      print(img_data.shape)
-
-   print(time.time()-ctime)
-   """
    with open(f"{os.getcwd()}/data/label_small.txt","w") as file:
 
       file.write(json.dumps((label[2]).tolist()))
@@ -388,3 +378,4 @@ if __name__ == "__main__":
       file.write(json.dumps((label[0]).tolist()))
 
       file.close()      
+
