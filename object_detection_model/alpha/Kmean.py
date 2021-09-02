@@ -3,45 +3,61 @@ from numba import jit
 import random
 
 
-def Kmean(bbox_hw,K=9,threshold=0.01,max_iterations=10000):
+def Kmean_IOU(bbox_hw,K=3,threshold=1e-8,max_iterations=2000):
 
    """
    bbox_hw -- (m,2) : h -> 0 , w -> 1
+
+   return -- [large,medium ,small] <-- list(list)
    """
 
    m = bbox_hw.shape[0]
 
-   #sample initial center
-   sample_list = random.sample(range(m),K)
+   #ONLY for K = 3 
+   if m == 1:
+
+      return [ [0] , [] , [] ]
+
+   elif m == 2:
+
+      bbox_1_area = bbox_hw[0,0] * bbox_hw[0,1]
+      bbox_2_area = bbox_hw[1,0] * bbox_hw[1,1]
+
+      if bbox_1_area > bbox_2_area:
+         
+         return [ [0] , [1] , [] ]
+
+      else:
+
+         return [ [1] , [0] , [] ]
 
    #initialize anchors (K,2)
    anchors = np.zeros((K,2))
-   
-   for idx,pos in enumerate(sample_list):
+   for i in range(K):
 
-     anchors[idx,0] = bbox_hw[pos,0]
-     anchors[idx,1] = bbox_hw[pos,1]
+      anchors[i,:] = bbox_hw[i,:].copy()
    
    #calculate Kmean
    iteration_i = 0
    
    while iteration_i <= max_iterations:
 
-      class_collections = [[] for i in range(K)]
+      #store the data by index
+      output_list = [[] for i in range(K)]
 
       #classify bbox 
       for i in range(m):
 
          class_id = best_anchor(bbox_hw[i,:].reshape(1,2),anchors)
 
-         class_collections[class_id].append(bbox_hw[i,:].tolist())
+         output_list[class_id].append(i)
 
       #update anchor box
       sum_diff = 0
       
       for i in range(K):
          
-         new_h,new_w = update_anchor_x(np.array(class_collections[i]),anchors[i,:].reshape(1,2))
+         new_h,new_w = update_anchor_x(bbox_hw,output_list[i],anchors[i,:].reshape(1,2))
 
          """
          #sum the changes for h and w of new anchor box 
@@ -54,7 +70,7 @@ def Kmean(bbox_hw,K=9,threshold=0.01,max_iterations=10000):
          intersection = min_h * min_w
          union = new_h * new_w + anchors[i,0] * anchors[i,1] - intersection
 
-         sum_diff = sum_diff + (1 - intersection / union)
+         sum_diff = sum_diff + (1 - intersection / (union + 1e-8) )
 
          #update anchor box
          anchors[i,0] = new_h
@@ -62,38 +78,74 @@ def Kmean(bbox_hw,K=9,threshold=0.01,max_iterations=10000):
 
       if sum_diff < threshold:
 
-         return anchors
+         return rearrange_output_list_to_correct_order(bbox_hw,output_list)
 
-   
-   return anchors
+      #update iteration
+      iteration_i = iteration_i + 1
+      
+   return rearrange_output_list_to_correct_order(bbox_hw,output_list)
          
 
-@jit(nopython=True)
-def update_anchor_x(class_package,anchors_box):
+def rearrange_output_list_to_correct_order(bbox_hw,output_list):
 
-  """
-  class_package -- (n,2) : h -> 0 , w -> 1
-  anchor_box -- (1,2) : h -> 0 , w -> 1
-  """
+   #corrected output_list
+   corrected_output_list = []
+   
+   n =len(output_list)
+   #find area sum
+   sample_area_sum = []
+   for i in range(n):
 
-  sum_w = 0
-  sum_h = 0
+      area = find_area_sum(bbox_hw,output_list[i])
+      sample_area_sum.append((i,area))
 
-  n = class_package.shape[0]
+   #sort the list
+   sample_area_sum.sort(key=lambda x:x[1],reverse=True)
 
-  for i in range(n):
+   #correct output list
+   for ele in sample_area_sum:
 
-    sum_h = sum_h + class_package[i,0]
-    sum_w = sum_w + class_package[i,1]
+      corrected_output_list.append(output_list[ele[0]])
 
-  if n == 0:
+   return corrected_output_list
+   
 
-    return anchors_box[0,0],anchors_box[0,1]
+def find_area_sum(bbox_hw,output_list_x):
 
-  mean_h = sum_h/n
-  mean_w = sum_w/n
+   area = 0
 
-  return mean_h,mean_w
+   for i in output_list_x:
+
+      area = area + bbox_hw[i,0] * bbox_hw[i,1]
+
+   return area
+      
+   
+def update_anchor_x(bbox_hw,output_list_x,anchors_x):
+
+   """
+   output_list_x -- [ n elements]
+   anchor_x -- (1,2) : h -> 0 , w -> 1
+   """
+
+   sum_w = 0
+   sum_h = 0
+
+   n = len(output_list_x)
+
+   for i in output_list_x:
+
+      sum_h = sum_h + bbox_hw[i,0]
+      sum_w = sum_w + bbox_hw[i,1]
+
+   if n == 0:
+
+      return anchors_x[0,0],anchors_x[0,1]
+
+   mean_h = sum_h/n
+   mean_w = sum_w/n
+
+   return mean_h,mean_w
 
 
 @jit(nopython=True)
@@ -114,14 +166,14 @@ def best_anchor(box,anchors):
 
   for i in range(K):
 
-    min_h = np.minimum(box[0,0],anchors[i,0]).item()
-    min_w = np.minimum(box[0,1],anchors[i,1]).item()
+    min_h = np.minimum(box[0,0],anchors[i,0])
+    min_w = np.minimum(box[0,1],anchors[i,1])
 
     intersection_area = min_h * min_w
 
     union_area = box[0,0] * box[0,1] + anchors[i,0] * anchors[i,1] - intersection_area
 
-    cur_iou = intersection_area / union_area 
+    cur_iou = intersection_area / (union_area + 1e-8)
 
     if cur_iou > max_iou:
 

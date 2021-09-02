@@ -8,7 +8,6 @@ import json
 import cv2
 import os
 import time
-import alpha
 
 
 @tf.function
@@ -21,9 +20,7 @@ def step_predict(img,model):
 def load_model(model_path):
 
    #define model
-   #model = tf.keras.models.load_model(model_path)
-   model = alpha.alpha_model()
-   model.load_weights(model_path)
+   model = tf.keras.models.load_model(model_path)
 
    return model
 
@@ -77,26 +74,20 @@ def predict(model,image_path,result_path,reversed_class_map,class_color_map,conf
 
          #large object
          large_obj = y[0][i].numpy()
-         large_confirmed_anchor_box = get_confirmed_anchor_box(large_obj,confidence_threshold)
+         
+         selected_object = analyse_feature(large_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
          
          #medium object
          medium_obj = y[1][i].numpy()
-         medium_confirmed_anchor_box = get_confirmed_anchor_box(medium_obj,confidence_threshold)
+         
+         selected_object = analyse_feature(medium_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
          
          #small object
          small_obj = y[2][i].numpy()
-         small_confirmed_anchor_box = get_confirmed_anchor_box(small_obj,confidence_threshold)
-
-         #final anchor box -- final_anchor_box -- list: [ (prob1,feat_vec1) , (prob2,feat_vec2) , ... ]
-         final_anchor_box = large_confirmed_anchor_box + medium_confirmed_anchor_box + small_confirmed_anchor_box
-
-         #sort in descending order
-         final_anchor_box.sort(key=lambda x:x[0],reverse=True)
-
-         #nms
-         selected_object = non_max_supression(final_anchor_box,diou_threshold)
          
-         #draw prediction
+         selected_object = analyse_feature(small_obj,confidence_threshold,diou_threshold)
          img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
 
          #save the result
@@ -304,7 +295,7 @@ if __name__ == "__main__":
    reversed_class_info = preprocess_data.reverse_class_info(class_info,data_path)
    
 
-   model_path = f"{path}/model_weights"
+   model_path = f"{path}/model"
    image_path = f"{path}/pending_to_analysis"
    result_path = f"{path}/result"
 

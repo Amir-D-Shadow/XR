@@ -305,7 +305,11 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
 
       for h_pos in range(h_pos_init,h_max):
 
-         if (n <= 9) and (y_true[h_pos,w_pos,0] == 0) and (w_pos > xlow) and (w_pos < xhigh) and (h_pos > ylow) and (h_pos < yhigh):
+         if (n >= 9):
+
+            break
+
+         if (y_true[h_pos,w_pos,0] == 0) and (w_pos > xlow) and (w_pos < xhigh) and (h_pos > ylow) and (h_pos < yhigh):
 
             #prob
             y_true[h_pos,w_pos,0] = 1

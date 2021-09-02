@@ -118,8 +118,7 @@ for i  in range(EPOCHS):
    #get data 
    for train_images, train_labels in generate_data.get_gt_data(buffer_size,img_train_info,class_train_info,img_train_path,img_shape,standard_scale,aug_flag):
 
-      #normalize the image to 0 to 1
-      train_images = train_images/ np.float64(255)
+      train_images = train_images.astype(np.float64)
 
       # Create Datasets from the batches
       train_dataset = tf.data.Dataset.from_tensor_slices((train_images, train_labels)).shuffle(buffer_size).batch(global_batch_size)
@@ -134,8 +133,13 @@ for i  in range(EPOCHS):
 
    print(f"Epoch {i+1} , Loss: {total_loss}")
       
+   #save model for each epoch
+   if ((i+1)%10) == 0:
 
+      model.save(f"{cur_path}/gdrive/MyDrive/model")
+      
 
+     
 
 
 
