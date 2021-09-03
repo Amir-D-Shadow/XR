@@ -13,8 +13,21 @@ class alpha_loss(tf.keras.losses.Loss):
 
   def call(self,y_true,y_pred):
 
+    """
+    y_true -- (batch_size,H,W,info) -- info [prob,x_left,y_left,x_center,y_center,class]
+    y_pred -- (batch_size,H,W,info) -- info [prob,x_left,y_left,x_center,y_center,class]
+
+    """
+
     #get object mask
     object_mask = K.cast(y_true[:,:,:,0:1],K.dtype(y_pred))
+
+    object_mask_bool = K.cast(object_mask,dtype=tf.bool)
+
+    #get ignore mask
+    ignore_mask  = tf.TensorArray(K.dtype(y_pred),size=1,dynamic_size=True)
+
+    ignore_mask = get_ignore_mask(ignore_mask,y_true,y_pred,object_mask_bool)
 
     #get prob
     prob_true = y_true[:,:,:,0:1]
@@ -38,8 +51,12 @@ class alpha_loss(tf.keras.losses.Loss):
     #class_pred = K.clip(class_pred,min_value = 0.0, max_value = 1.0)
 
     #prob focal loss
-    loss_tensor_prob =  - ( (1 - prob_pred[:,:,:,:])**self.gamma ) * prob_true[:,:,:,:] * tf.math.log( prob_pred[:,:,:,:] + 1e-18 ) - ( prob_pred[:,:,:,:] ** self.gamma ) * ( 1 - prob_true[:,:,:,:] ) * tf.math.log( 1 - prob_pred[:,:,:,:] + 1e-18 ) 
-    prob_focal_loss = K.sum(loss_tensor_prob)/ m
+    loss_tensor_prob =  - ( (1 - prob_pred[:,:,:,:])**self.gamma ) * prob_true[:,:,:,:] * tf.math.log( prob_pred[:,:,:,:] + 1e-18 ) - ( prob_pred[:,:,:,:] ** self.gamma ) * ( 1 - prob_true[:,:,:,:] ) * tf.math.log( 1 - prob_pred[:,:,:,:] + 1e-18 )
+    
+    pos_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * object_mask[:,:,:,:]
+    neg_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * (1 - object_mask[:,:,:,:]) * ignore_mask[:,:,:,:]
+    
+    prob_focal_loss = K.sum( (pos_loss_tensor_prob[:,:,:,:] + neg_loss_tensor_prob[:,:,:,:]) )/ m
 
     #class focal loss
     loss_tensor_class =  - ( (1 - class_pred[:,:,:,:])**self.gamma ) * class_true[:,:,:,:] * tf.math.log( class_pred[:,:,:,:] + 1e-18 ) - ( class_pred[:,:,:,:] ** self.gamma) * ( 1 - class_true[:,:,:,:] ) * tf.math.log( 1 - class_pred[:,:,:,:] + 1e-18 )
@@ -171,6 +188,95 @@ class alpha_loss(tf.keras.losses.Loss):
  
     return loss
 
+def get_ignore_mask(ignore_mask,y_true,y_pred,object_mask_bool,ignore_threshold = 0.5):
+
+  """
+  y_true -- (batch_size,H,W,info) -- info [prob,x_left,y_left,x_center,y_center,class]
+  y_pred -- (batch_size,H,W,info) -- info [prob,x_left,y_left,x_center,y_center,class]
+  ignore_mask -- TensorArray
+  """
+  #set up
+  y_true = K.cast(y_true,K.dtype(y_pred))
+
+  m = K.cast(K.shape(y_true)[0],tf.int32)
+
+  i = 0
+
+  i = K.cast(i,K.dtype(m))
+
+  #loop via each batch
+  while i < m:
+
+    #get true box -- shape (n,4)
+    true_box = tf.boolean_mask(y_true[i,:,:,1:5],object_mask_bool[i,:,:,0])
+
+    #get true box -- shape (1,n,4)
+    true_box = true_box[tf.newaxis,:,:]
+
+    #get y_pred_batch -- shape (h,w,4)
+    y_pred_batch = y_pred[i,:,:,1:5]
+    
+    #get y_pred_batch -- shape (h,w,1,4)
+    y_pred_batch = y_pred_batch[:,:,tf.newaxis,:]
+
+    #****************** IOU ******************
+
+    #batch pred -- (h,w,1,4)
+    batch_pred_left_xy =  y_pred_batch[:,:,:,0:2]
+    batch_pred_center_xy = y_pred_batch[:,:,:,2:4]
+    
+    batch_pred_wh = (batch_pred_center_xy[:,:,:,:] - batch_pred_left_xy[:,:,:,:])*2
+
+    batch_pred_right_xy = batch_pred_left_xy[:,:,:,:] + batch_pred_wh[:,:,:,:] 
+
+    #batch true -- (1,n,4)
+    batch_true_left_xy = true_box[:,:,0:2]
+    batch_true_center_xy = true_box[:,:,2:4]
+
+    batch_true_wh =  (batch_true_center_xy[:,:,:] - batch_true_left_xy[:,:,:])*2
+
+    batch_true_right_xy = batch_true_left_xy[:,:,:] + batch_true_wh[:,:,:]
+
+    #intersection -- (h,w,n,2)
+    batch_intersection_left = K.maximum(batch_pred_left_xy,batch_true_left_xy)
+    batch_intersection_right = K.minimum(batch_pred_right_xy,batch_true_right_xy)
+
+    #calibrate 
+    batch_intersection_right = K.maximum(batch_intersection_right,batch_intersection_left)
+
+    #batch intersection wh -- (h,w,n,2)
+    batch_intersection_wh = batch_intersection_right[:,:,:,:] - batch_intersection_left[:,:,:,:]
+    
+    #batch intersection area -- (h,w,n)
+    batch_intersection_area = batch_intersection_wh[:,:,:,0] * batch_intersection_wh[:,:,:,1]
+
+    #batch union area -- (h,w,n)
+    batch_true_union_area = batch_true_wh[:,:,0] * batch_true_wh[:,:,1]
+    batch_pred_union_area = batch_pred_wh[:,:,:,0] * batch_pred_wh[:,:,:,1]
+
+    batch_union_area = (batch_true_union_area + batch_pred_union_area) - batch_intersection_area
+
+    #calculate iou -- (h,w,n)
+    batch_iou = batch_intersection_area / batch_union_area
+
+    #****************** IOU ******************
+
+    #get best iou -- (h,w,1)
+    best_iou = K.max(batch_iou,axis=-1,keepdims=True)
+
+    #ignore value -- (h,w,1)
+    ignore_val = K.cast(best_iou < ignore_threshold,K.dtype(y_pred))
+
+    #update ignore mask
+    ignore_mask = ignore_mask.write(i,ignore_val)
+
+    #update i
+    i = i + 1
+
+  #stack to tensor -- (m,h,w,1)
+  ignore_mask = ignore_mask.stack()
+
+  return ignore_mask
 
 if __name__ == "__main__":
 
