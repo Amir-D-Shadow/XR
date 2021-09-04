@@ -107,7 +107,8 @@ class alpha_loss(tf.keras.losses.Loss):
     #----------------------------------------------------------------------
 
     #calculate reg loss
-    loss_tensor = - ( (1 - iou_val[:,:,:,:])**self.gamma ) * tf.math.log( iou_val[:,:,:,:] + 1e-18) * object_mask[:,:,:,:]
+    #loss_tensor = - ( (1 - iou_val[:,:,:,:])**self.gamma ) * tf.math.log( iou_val[:,:,:,:] + 1e-18) * object_mask[:,:,:,:]
+    loss_tensor = (1 - iou_val[:,:,:,:])*object_mask[:,:,:,:]
     reg_loss = K.sum(loss_tensor) / m
 
     #****************** Focal IOU loss ******************

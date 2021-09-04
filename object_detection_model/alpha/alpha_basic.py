@@ -6,7 +6,7 @@ from TCBM import TCBM
 from SPP import SPP
 from TCBL import TCBL
 from CBS import CBS
-from AttentionModule_lambda_version import AttentionModule
+
 
 class alpha_model(tf.keras.Model):
 
@@ -17,14 +17,13 @@ class alpha_model(tf.keras.Model):
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
       
-      #AttentionModule_1 in : 640 x 640 x 3 out: 640 x 640 x 32
-      attention_info = {}
-      attention_info["CBL_1"] = (32,3,1,"same")
-      attention_info["conv_query"] = (32,3,1,"same")
-      attention_info["conv_keys"] = (32,3,1,"same")
-      attention_info["conv_values"] = (32,3,1,"same")
+      #CBM_1 in : 640 x 640 x 3 out: 640 x 640 x 32
+      filters=32
+      kernel_size=3
+      strides=1
+      padding="same"
 
-      self.AttentionModule_1 = AttentionModule(attention_info)
+      self.CBM_1 = CBM(filters,kernel_size,strides,padding)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
@@ -99,7 +98,7 @@ class alpha_model(tf.keras.Model):
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #CSP8_1 in : 159 x 159 x 128  out : 79 x 79 x 256 
+      #CSP8_1 in : 159 x 159 x 128  out : 79 x 79 x 256 -- branch 1
       CSPX_info = {}
 
       #num_of_res_unit
@@ -167,18 +166,7 @@ class alpha_model(tf.keras.Model):
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #AttentionModule_2_branch_1 in : 79 x 79 x 256  out :  79 x 79 x 256 -- branch 1
-      attention_info = {}
-      attention_info["CBL_1"] = (256,3,1,"same")
-      attention_info["conv_query"] = (256,3,1,"same")
-      attention_info["conv_keys"] = (256,3,1,"same")
-      attention_info["conv_values"] = (256,3,1,"same")
-
-      self.AttentionModule_2_branch_1 = AttentionModule(attention_info)
-
-      #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
-
-      #CSP8_2 in : 79 x 79 x 256 out : 39 x 39 x 512 
+      #CSP8_2 in : 79 x 79 x 256 out : 39 x 39 x 512 --- branch_2
       CSPX_info = {}
 
       #num_of_res_unit
@@ -247,17 +235,6 @@ class alpha_model(tf.keras.Model):
       self.CSP8_branch_2 = CSPX(CSPX_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
-      
-      #AttentionModule_3_branch_2 in : 39 x 39 x 512  out :  39 x 39 x 512 --- branch 2
-      attention_info = {}
-      attention_info["CBL_1"] = (512,3,1,"same")
-      attention_info["conv_query"] = (512,3,1,"same")
-      attention_info["conv_keys"] = (512,3,1,"same")
-      attention_info["conv_values"] = (512,3,1,"same")
-
-      self.AttentionModule_3_branch_2 = AttentionModule(attention_info)
-
-      #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CSP4 in : 39 x 39 x 512 out : 19 x 19 x 1024
       CSPX_info = {}
@@ -305,17 +282,6 @@ class alpha_model(tf.keras.Model):
 
       #define CSP4
       self.CSP4 = CSPX(CSPX_info)
-
-      #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
-
-      #AttentionModule_4 in : 19 x 19 x 1024  out :  19 x 19 x 1024
-      attention_info = {}
-      attention_info["CBL_1"] = (1024,3,1,"same")
-      attention_info["conv_query"] = (1024,3,1,"same")
-      attention_info["conv_keys"] = (1024,3,1,"same")
-      attention_info["conv_values"] = (1024,3,1,"same")
-
-      self.AttentionModule_4 = AttentionModule(attention_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
@@ -552,35 +518,26 @@ class alpha_model(tf.keras.Model):
       
    def call(self,inputs,train_flag=True):
 
-      #AttentionModule_1
-      AttentionModule_1 = self.AttentionModule_1(inputs,train_flag)
+      #CBM1
+      CBM_1 = self.CBM_1(inputs,train_flag)
 
       #CSP1
-      CSP1 = self.CSP1(AttentionModule_1,train_flag)
+      CSP1 = self.CSP1(CBM_1,train_flag)
 
       #CSP2
       CSP2 = self.CSP2(CSP1,train_flag)
 
-      #CSP8_branch_1 
+      #CSP8_branch_1 ----------------------------------------- branch 1
       CSP8_branch_1 = self.CSP8_branch_1(CSP2,train_flag)
 
-      #AttentionModule_2_branch_1 ----------------------------------------- branch 1
-      AttentionModule_2_branch_1 = self.AttentionModule_2_branch_1(CSP8_branch_1,train_flag)
-      
-      #CSP8_branch_2 
-      CSP8_branch_2 = self.CSP8_branch_2(AttentionModule_2_branch_1,train_flag)
-
-      #AttentionModule_3_branch_2 ----------------------------------------- branch 2
-      AttentionModule_3_branch_2 = self.AttentionModule_3_branch_2(CSP8_branch_2,train_flag)
+      #CSP8_branch_2 ----------------------------------------- branch 2
+      CSP8_branch_2 = self.CSP8_branch_2(CSP8_branch_1,train_flag)
 
       #CSP4
-      CSP4 = self.CSP4(AttentionModule_3_branch_2,train_flag)
-
-      #AttentionModule_4
-      AttentionModule_4 = self.AttentionModule_4(CSP4,train_flag)
+      CSP4 = self.CSP4(CSP8_branch_2,train_flag)
 
       #CBL_1_neck
-      CBL_1_neck = self.CBL_1_neck(AttentionModule_4,train_flag)
+      CBL_1_neck = self.CBL_1_neck(CSP4,train_flag)
 
       #CBL_2_neck
       CBL_2_neck = self.CBL_2_neck(CBL_1_neck,train_flag)
@@ -607,7 +564,7 @@ class alpha_model(tf.keras.Model):
       TCBL1 = self.TCBL1(CBL_7_neck,train_flag)
 
       #CBL_connect_branch_2
-      CBL_connect_branch_2 = self.CBL_connect_branch_2(AttentionModule_3_branch_2,train_flag)
+      CBL_connect_branch_2 = self.CBL_connect_branch_2(CSP8_branch_2,train_flag)
 
       #concat TCBL1 -- CBL_connect_branch_2
       concat_TCBL1_CBL_connect_branch_2 = tf.keras.layers.concatenate(inputs=[TCBL1,CBL_connect_branch_2],axis=-1)
@@ -634,7 +591,7 @@ class alpha_model(tf.keras.Model):
       TCBL2 = self.TCBL2(CBL_6_phase1,train_flag)
 
       #CBL_connect_branch_1
-      CBL_connect_branch_1 = self.CBL_connect_branch_1(AttentionModule_2_branch_1,train_flag)
+      CBL_connect_branch_1 = self.CBL_connect_branch_1(CSP8_branch_1,train_flag)
 
       #concat TCBL2 -- CBL_connect_branch_1 , out: 79 x 79 x 256
       concat_TCBL2_CBL_connect_branch_1 = tf.keras.layers.concatenate(inputs=[TCBL2,CBL_connect_branch_1],axis=-1)
