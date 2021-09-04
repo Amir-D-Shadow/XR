@@ -257,7 +257,7 @@ def get_ignore_mask(ignore_mask,y_true,y_pred,object_mask_bool,ignore_threshold 
     batch_union_area = (batch_true_union_area + batch_pred_union_area) - batch_intersection_area
 
     #calculate iou -- (h,w,n)
-    batch_iou = batch_intersection_area / batch_union_area
+    batch_iou = batch_intersection_area / (batch_union_area + 1e-10)
 
     #****************** IOU ******************
 
