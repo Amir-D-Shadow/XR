@@ -109,7 +109,7 @@ class AttentionModule(tf.keras.Model):
    def __init__(self,attention_info,**kwargs):
 
       """
-      attention_info -- dictionary containing information: 
+      attention_info -- dictionary containing information: CBL_1 ,conv_query ,conv_keys ,conv_values
 
                      
       Module Graph:
