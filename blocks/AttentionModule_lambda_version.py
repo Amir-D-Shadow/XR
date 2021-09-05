@@ -8,14 +8,14 @@ from CBL import CBL
 def attention_step_process_layer(input_list):
 
     """
-    ** X -- multiply and sum over
+    ** @ -- multiply and sum over
 
     process:
 
     query -----------------
-                          | ---- X ------- softmax---
-    keys ----- softmax ----                          |------------------ output
-                                                    |
+                          | ---- @ ------- softmax---
+    keys ------------------                          |------------------ output
+                                                     |
     values -------------------------------------------
 
     """
@@ -62,35 +62,20 @@ def attention_step_process_layer(input_list):
         #fine tune to (1 , h x w , c)
         feat_keys = feat_keys[tf.newaxis,:,:]
 
-        #softmax activate -- phase 1
-        first_phase_attentions = tf.keras.layers.Softmax(axis = 1)(feat_keys)
-
         #fine tune query to (h,w,1,c)
         feat_query = feat_query[:,:,tf.newaxis,:]
 
-        #Multiply feat_query with first_phase_attentions -- (h,w, h x w , c)
-        first_phase_output = feat_query * first_phase_attentions
+        #Globally Multiply feat_query with feat keys  -- (h,w, h x w , c)
+        first_phase_output = feat_query * feat_keys
 
         #sum over -- (h,w,c)
         first_phase_output = K.sum(first_phase_output,axis=-2,keepdims=False)
-
-        #reshape -- (h x w, c )
-        first_phase_output = tf.reshape(first_phase_output,shape=(-1,num_of_channels))
-
-        #fine tune first_phase_output to (1,h x w,c)
-        first_phase_output = first_phase_output[tf.newaxis,:,:]
         
-        #softmax activate -- phase 2
-        second_phase_attentions = tf.keras.layers.Softmax(axis = 1)(first_phase_output)
+        #softmax activate -- phase 2 -- (h,w,c)
+        second_phase_attentions = tf.keras.layers.Softmax(axis = [0,1,2])(first_phase_output)
 
-        #fine tune values to (h,w,1,c)
-        feat_values = feat_values[:,:,tf.newaxis,:]
-
-        #Multiply feat_values with second_phase_attentions -- (h,w, h x w , c)
+        #Multiply feat_values with second_phase_attentions -- (h,w,c)
         second_phase_output = feat_values * second_phase_attentions
-
-        #sum over -- (h,w,c)
-        second_phase_output = K.sum(second_phase_output,axis=-2,keepdims=False)
 
         #save
         output_tensor = output_tensor.write(i,second_phase_output)
@@ -202,7 +187,8 @@ if __name__ == "__main__":
    attention_info["conv_query"] = (20,3,1,"same")
    attention_info["conv_keys"] = (20,3,1,"same")
    attention_info["conv_values"] = (20,3,1,"same")
-
+   """
    y = AttentionModule(attention_info)
    model = y.graph_model(dim=(80,80,6))
    plot_model(model,show_shapes=True, show_layer_names=True)
+   """
