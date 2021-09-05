@@ -5,18 +5,18 @@ from CBL import CBL
 
 class attention_step_process_layer(tf.keras.layers.Layer):
 
-   """
-   ** X -- multiply
-   
-   process:
+    """
+    ** @ -- multiply and sum over
 
-   query -----------------
-                          | ---- X ------- softmax---
-   keys ----- softmax ----                          |------------------ output
-                                                    |
-   values -------------------------------------------
+    process:
 
-   """
+    query -----------------
+                          | ---- @ ------- softmax---
+    keys ------------------                          |------------------ output
+                                                     |
+    values -------------------------------------------
+
+    """
 
    def __init__(self):
 
@@ -44,56 +44,41 @@ class attention_step_process_layer(tf.keras.layers.Layer):
       #loop via batch size
       while i < m:
 
-         #get feat query -- (h,w,c)
-         feat_query = query[i,:,:,:]
+        #get feat query -- (h,w,c)
+        feat_query = query[i,:,:,:]
 
-         #get feat keys -- (h,w,c)
-         feat_keys = keys[i,:,:,:]
+        #get feat keys -- (h,w,c)
+        feat_keys = keys[i,:,:,:]
 
-         #get feat values -- (h,w,c)
-         feat_values = values[i,:,:,:]
+        #get feat values -- (h,w,c)
+        feat_values = values[i,:,:,:]
 
-         #reshape feat_keys to (h x w,c)
-         feat_keys = tf.reshape(feat_keys,shape=(-1,num_of_channels))
+        #reshape feat_keys to (h x w,c)
+        feat_keys = tf.reshape(feat_keys,shape=(-1,num_of_channels))
 
-         #fine tune to (1 , h x w , c)
-         feat_keys = feat_keys[tf.newaxis,:,:]
+        #fine tune to (1 , h x w , c)
+        feat_keys = feat_keys[tf.newaxis,:,:]
 
-         #softmax activate -- phase 1
-         first_phase_attentions = tf.keras.layers.Softmax(axis = 1)(feat_keys)
+        #fine tune query to (h,w,1,c)
+        feat_query = feat_query[:,:,tf.newaxis,:]
 
-         #fine tune query to (h,w,1,c)
-         feat_query = feat_query[:,:,tf.newaxis,:]
+        #Globally Multiply feat_query with feat keys  -- (h,w, h x w , c)
+        first_phase_output = feat_query * feat_keys
 
-         #Multiply feat_query with first_phase_attentions -- (h,w, h x w , c)
-         first_phase_output = feat_query * first_phase_attentions
+        #sum over -- (h,w,c)
+        first_phase_output = K.sum(first_phase_output,axis=-2,keepdims=False)
+        
+        #softmax activate -- phase 2 -- (h,w,c)
+        second_phase_attentions = tf.keras.layers.Softmax(axis = [0,1,2])(first_phase_output)
 
-         #sum over -- (h,w,c)
-         first_phase_output = K.sum(first_phase_output,axis=-2,keepdims=False)
+        #Multiply feat_values with second_phase_attentions -- (h,w,c)
+        second_phase_output = feat_values * second_phase_attentions
 
-         #reshape -- (h x w, c )
-         first_phase_output = tf.reshape(first_phase_output,shape=(-1,num_of_channels))
+        #save
+        output_tensor = output_tensor.write(i,second_phase_output)
 
-         #fine tune first_phase_output to (1,h x w,c)
-         first_phase_output = first_phase_output[tf.newaxis,:,:]
-         
-         #softmax activate -- phase 2
-         second_phase_attentions = tf.keras.layers.Softmax(axis = 1)(first_phase_output)
-
-         #fine tune values to (h,w,1,c)
-         feat_values = feat_values[:,:,tf.newaxis,:]
-
-         #Multiply feat_values with second_phase_attentions -- (h,w, h x w , c)
-         second_phase_output = feat_values * second_phase_attentions
-
-         #sum over -- (h,w,c)
-         second_phase_output = K.sum(second_phase_output,axis=-2,keepdims=False)
-
-         #save
-         output_tensor = output_tensor.write(i,second_phase_output)
-
-         #update i
-         i = i + 1
+        #update i
+        i = i + 1
          
       #stack to tensor
       output_tensor = output_tensor.stack()
@@ -106,19 +91,21 @@ class AttentionModule(tf.keras.Model):
    def __init__(self,attention_info,**kwargs):
 
       """
+
       attention_info -- dictionary containing information: CBL_1 ,conv_query ,conv_keys ,conv_values
 
                      
       Module Graph:
-
-
-                     ----- conv_query ------ 
-                     |                      |
-                     |                      |______
-      CBL1 ----------|---- conv_keys ------- ______  attention_step_process_1 --- LN --- leaky relu 
+                ___________________________________________________________________
+               |                                                                  |
+               |     ----- conv_query ------                                      |
+               |     |                      |                                     |
+               |     |                      |______                               |
+      CBL1 ----------|---- conv_keys ------- ______  attention_step_process_1 --- Add --- LN --- leaky relu 
                      |                      |
                      |                      |
                      ----- conv_values -----
+      
       """
 
       super(AttentionModule,self).__init__(**kwargs)
@@ -146,6 +133,9 @@ class AttentionModule(tf.keras.Model):
       #step process
       self.attention_step_process_1 = attention_step_process_layer()
 
+      #Add
+      self.Add_layer = tf.keras.layers.Add()
+
       #LN_1
       self.LN_1 = tf.keras.layers.LayerNormalization(axis=[1,2,3])
 
@@ -168,6 +158,9 @@ class AttentionModule(tf.keras.Model):
 
       #step process
       attention_step_process_1 = self.attention_step_process_1(conv_query,conv_keys,conv_values)
+
+      #Add
+      Add_layer = self.Add_layer([CBL_1,attention_step_process_1])
 
       #LN_1
       LN_1 = self.LN_1(attention_step_process_1,training=train_flag)
