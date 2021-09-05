@@ -8,7 +8,7 @@ from CBL import CBL
 def attention_step_process_layer(input_list):
 
     """
-    ** X -- multiply
+    ** X -- multiply and sum over
 
     process:
 
@@ -109,19 +109,21 @@ class AttentionModule(tf.keras.Model):
    def __init__(self,attention_info,**kwargs):
 
       """
+
       attention_info -- dictionary containing information: CBL_1 ,conv_query ,conv_keys ,conv_values
 
                      
       Module Graph:
-
-
-                     ----- conv_query ------ 
-                     |                      |
-                     |                      |______
-      CBL1 ----------|---- conv_keys ------- ______  attention_step_process_1 --- LN --- leaky relu 
+                ___________________________________________________________________
+               |                                                                  |
+               |     ----- conv_query ------                                      |
+               |     |                      |                                     |
+               |     |                      |______                               |
+      CBL1 ----------|---- conv_keys ------- ______  attention_step_process_1 --- Add --- LN --- leaky relu 
                      |                      |
                      |                      |
                      ----- conv_values -----
+      
       """
 
       super(AttentionModule,self).__init__(**kwargs)
@@ -149,6 +151,9 @@ class AttentionModule(tf.keras.Model):
       #step process
       self.attention_step_process_1 = tf.keras.layers.Lambda(attention_step_process_layer)
 
+      #Add
+      self.Add_layer = tf.keras.layers.Add()
+
       #LN_1
       self.LN_1 = tf.keras.layers.LayerNormalization(axis=[1,2,3])
 
@@ -172,8 +177,11 @@ class AttentionModule(tf.keras.Model):
       #step process
       attention_step_process_1 = self.attention_step_process_1([conv_query,conv_keys,conv_values])
 
+      #Add
+      Add_layer = self.Add_layer([CBL_1,attention_step_process_1])
+      
       #LN_1
-      LN_1 = self.LN_1(attention_step_process_1,training=train_flag)
+      LN_1 = self.LN_1(Add_layer,training=train_flag)
 
       #output_leakyrelu
       output_leakyrelu = self.output_leakyrelu(LN_1)
