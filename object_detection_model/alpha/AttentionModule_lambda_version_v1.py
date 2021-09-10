@@ -8,7 +8,7 @@ from CBL import CBL
 def attention_step_process_layer(input_list):
 
     """
-    ** @ -- scaled dot
+    ** @ -- multiply and sum over
 
     process:
 
@@ -39,10 +39,6 @@ def attention_step_process_layer(input_list):
     #get number of channel
     num_of_channels = query.shape[-1]
 
-    #scaled dot factor
-    scaled_dot_factor = np.sqrt( num_of_channels )
-    scaled_dot_factor = K.cast(scaled_dot_factor,K.dtype(query))
-
     #set up
     output_tensor = tf.TensorArray(K.dtype(query),size=1,dynamic_size=True)
 
@@ -66,26 +62,23 @@ def attention_step_process_layer(input_list):
         #fine tune to (1 , h x w , c)
         feat_keys = feat_keys[tf.newaxis,:,:]
 
-        #reshape feat_query to (h,w,1,c)
+        #fine tune query to (h,w,1,c)
         feat_query = feat_query[:,:,tf.newaxis,:]
 
-        #scale_dot attention -- mult -- (h,w, h x w , c)
-        scale_dot_attention = feat_query * feat_keys
+        #Globally Multiply feat_query with feat keys  -- (h,w, h x w , c)
+        first_phase_output = feat_query * feat_keys
 
-        #scale_dot attention -- sum -- (h,w, h x w )
-        scale_dot_attention = ( K.sum(scale_dot_attention,axis=-1,keepdims=False) / scaled_dot_factor )
+        #sum over -- (h,w,c)
+        first_phase_output = K.sum(first_phase_output,axis=-2,keepdims=False)
         
-        #softmax activate -- (h,w,h x w)
-        scale_dot_attention = tf.keras.layers.Softmax(axis = -1)(scale_dot_attention)
+        #softmax activate -- phase 2 -- (h,w,c)
+        second_phase_attentions = tf.keras.layers.Softmax(axis = [0,1,2])(first_phase_output)
 
-        #reshape feat_values to (h x w,c)
-        feat_values = tf.reshape(feat_values,shape=(-1,num_of_channels))
-
-        #matmul -- (h,w,c)
-        final_ouput = tf.matmul(scale_dot_attention,feat_values)
+        #Multiply feat_values with second_phase_attentions -- (h,w,c)
+        second_phase_output = feat_values * second_phase_attentions
 
         #save
-        output_tensor = output_tensor.write(i,final_ouput)
+        output_tensor = output_tensor.write(i,second_phase_output)
 
         #update i
         i = i + 1
@@ -111,7 +104,7 @@ class AttentionModule(tf.keras.Model):
                |     ----- conv_query ------                                      |
                |     |                      |                                     |
                |     |                      |______                               |
-      CBL1 ----------|---- conv_keys ------- ______ attention_step_process_layer --- Add --- LN --- leaky relu 
+      CBL1 ----------|---- conv_keys ------- ______  attention_step_process_1 --- Add --- LN --- leaky relu 
                      |                      |
                      |                      |
                      ----- conv_values -----
