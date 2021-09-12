@@ -34,21 +34,21 @@ with strategy.scope():
       #total loss
       total_loss = large_obj_loss + medium_obj_loss + small_obj_loss
 
-      return total_loss
+      return total_loss 
 
    #define learning rate scheduler
-   lr_scheduler = tf.keras.optimizers.schedules.CosineDecay(initial_learning_rate=0.001,decay_steps=10,alpha=1e-5)
-   
+   #lr_scheduler = tf.keras.optimizers.schedules.CosineDecay(initial_learning_rate=0.001,decay_steps=5,alpha=1e-5)
+
    #define optimizer
    #optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler)
    optimizer = tf.keras.optimizers.Adam()
 
    #define model
-   #model = tf.keras.models.load_model(f"{cur_path}/gdrive/MyDrive/model")
    model = alpha_model()
+   model.load_weights(f"{cur_path}/gdrive/MyDrive/model_weights")
+   #model = tf.keras.models.load_model(f"{cur_path}/gdrive/MyDrive/model")
    
-
-#step function -- train
+#step function
 @tf.function
 def distributed_train_step(data_inputs):
 
@@ -67,35 +67,32 @@ def train_step(inputs):
       
       loss = compute_loss(labels,predictions)
 
-   gradients = tape.gradient(loss,model.trainable_variables)
+   gradients = tape.gradient(loss,model.trainable_weights)
 
-   optimizer.apply_gradients(zip(gradients,model.trainable_variables))
+   optimizer.apply_gradients(zip(gradients,model.trainable_weights))
 
    return loss
 
+batch_size_per_replica = 4
 
-#set up
-batch_size_per_replica = 2
-
-EPOCHS = 50
+EPOCHS = 20
 
 #preprocessing class
-input_path = f"{cur_path}/annotations/train_annotations.csv"
-save_path = f"{cur_path}/data"
+input_path = f"{cur_path}/gdrive/MyDrive/annotations/train_annotations.csv"
+save_path = f"{cur_path}/gdrive/MyDrive/data"
 
-class_train_info = preprocess_data.preprocess_class(input_path,save_path)
+class_train_info = preprocess_class(input_path,save_path)
 
 #preprocessing label
-input_path = f"{cur_path}/annotations/test_annotations.csv"
-save_path = f"{cur_path}/data"
+input_path = f"{cur_path}/gdrive/MyDrive/annotations/test_annotations.csv"
+save_path = f"{cur_path}/gdrive/MyDrive/data"
 
-img_train_info = preprocess_data.preprocessing_label(input_path,save_path)
+img_train_info = preprocessing_label(input_path,save_path)
 
 #train image path
-img_train_path = f"{cur_path}/images"
+img_train_path = f"{cur_path}/gdrive/MyDrive/img"
 
 img_shape = (640,640)
-standard_scale=(19360,66930)
 
 #get number of sample m
 m = len(list(img_train_info.keys()))
@@ -104,20 +101,26 @@ m = len(list(img_train_info.keys()))
 global_batch_size = batch_size_per_replica * strategy.num_replicas_in_sync
 buffer_size = global_batch_size * 2
 
-#total step per epochs
-total_step_per_epoch = int(m/buffer_size)
-
-#data augmentation
-aug_flag = True
+#aug flag
+aug_flag = False
 
 #train
 for i  in range(EPOCHS):
 
    total_loss = 0.0
 
-   #get data 
-   for train_images, train_labels in generate_data.get_gt_data(buffer_size,img_train_info,class_train_info,img_train_path,img_shape,standard_scale,aug_flag):
+   if (i+1) < 295:
 
+     aug_flag = True
+
+   else:
+
+     aug_flag = False
+
+   #get data 
+   for train_images, train_labels in get_gt_data(buffer_size,img_train_info,class_train_info,img_train_path,img_shape,aug_flag):
+
+      #cast data
       train_images = train_images.astype(np.float64)
 
       # Create Datasets from the batches
@@ -129,14 +132,21 @@ for i  in range(EPOCHS):
       #Do training
       for batch in train_dist_dataset:
 
-         total_loss = total_loss + distributed_train_step(batch)
-
+         total_loss = total_loss + distributed_train_step(batch) 
+   
+   total_loss = total_loss 
+   
    print(f"Epoch {i+1} , Loss: {total_loss}")
-      
+
    #save model for each epoch
+   model.save_weights(f"{cur_path}/gdrive/MyDrive/model_weights")
+   """
    if ((i+1)%10) == 0:
 
-      model.save(f"{cur_path}/gdrive/MyDrive/model")
+     #model.save(f"{cur_path}/gdrive/MyDrive/model")
+     model.save_weights(f"{cur_path}/gdrive/MyDrive/model_weights")
+
+   """
       
 
      

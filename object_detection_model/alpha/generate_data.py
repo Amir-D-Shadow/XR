@@ -92,7 +92,6 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640)):
    name_list -- list
    img_info -- dict -- {obj1:[[class,xmin,ymin,xcenter,ycenter],[class,xmin,ymin,xcenter,ycenter],...],obj2:...} (for each key)
    class_info -- dict
-   standard_scale -- dict (small , medium , large)
    img_shape -- (height,width)
    """
    #initialize y_true

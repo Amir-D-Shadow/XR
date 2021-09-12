@@ -6,8 +6,6 @@ from TCBM import TCBM
 from SPP import SPP
 from TCBL import TCBL
 from CBS import CBS
-from RESX import RESX
-from AttentionModule_lambda_version import AttentionModule
 
 
 class alpha_model(tf.keras.Model):
@@ -29,196 +27,264 @@ class alpha_model(tf.keras.Model):
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #resX_1 in : 640 x 640 x 32 out: 319 x 319 x 64
-      RESX_info = {}
+      #CSP_1 in : 640 x 640 x 32 out: 319 x 319 x 64
+      CSPX_info = {}
 
-      #CBL_1
-      RESX_info["CBL_1"] = (64,3,2,"valid")
+      #num_of_res_unit
+      CSPX_info["num_of_res_unit"] = 1
 
-      #number of res unit
-      RESX_info["num_of_res_unit"] = 1
+      #res_unit_info
 
-      #res unit info
       res_unit_1 = {}
       res_unit_1["CBM_1"] = (32,1,1,"same")
       res_unit_1["CBM_2"] = (64,3,1,"same")
-      RESX_info["res_unit_1"] = res_unit_1
+      CSPX_info["res_unit_1"] = res_unit_1
 
-      #resX_1
-      self.resX_1 = RESX(RESX_info)
+
+      #CBL_1
+      CSPX_info["CBL_1"] = (64,3,2,"valid")
+
+      #CBL_2
+      CSPX_info["CBL_2"] = (64,1,1,"same")
+
+      #CBL_3
+      CSPX_info["CBL_3"] = (64,1,1,"same")
+
+      #CBL_4
+      CSPX_info["CBL_4"] = (64,1,1,"same")
+
+      #CBM_1
+      CSPX_info["CBM_1"] = (64,1,1,"same")
+
+      #define CSP1
+      self.CSP1 = CSPX(CSPX_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #resX_2 in : 319 x 319 x 64 out : 159 x 159 x 128
-      RESX_info = {}
+      #CSP2 in : 319 x 319 x 64 out : 159 x 159 x 128
+      CSPX_info = {}
 
-      #CBL_1
-      RESX_info["CBL_1"] = (128,3,2,"valid")
+      #num_of_res_unit
+      CSPX_info["num_of_res_unit"] = 2
 
-      #number of res unit
-      RESX_info["num_of_res_unit"] = 2
-
-      #res unit info
+      #res_unit_info
       res_unit_1 = {}
       res_unit_1["CBM_1"] = (64,1,1,"same")
-      res_unit_1["CBM_2"] = (128,3,1,"same")
-      RESX_info["res_unit_1"] = res_unit_1
+      res_unit_1["CBM_2"] = (64,3,1,"same")
+      CSPX_info["res_unit_1"] = res_unit_1
 
       res_unit_2 = {}
       res_unit_2["CBM_1"] = (64,1,1,"same")
-      res_unit_2["CBM_2"] = (128,3,1,"same")
-      RESX_info["res_unit_2"] = res_unit_2
+      res_unit_2["CBM_2"] = (64,3,1,"same")
+      CSPX_info["res_unit_2"] = res_unit_2
 
-      #resX_2
-      self.resX_2 = RESX(RESX_info)
+      #CBL_1
+      CSPX_info["CBL_1"] = (128,3,2,"valid")
+
+      #CBL_2
+      CSPX_info["CBL_2"] = (64,1,1,"same")
+
+      #CBL_3
+      CSPX_info["CBL_3"] = (64,1,1,"same")
+
+      #CBL_4
+      CSPX_info["CBL_4"] = (64,1,1,"same")
+
+      #CBM_1
+      CSPX_info["CBM_1"] = (128,1,1,"same")
+
+      #define CSP2
+      self.CSP2 = CSPX(CSPX_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #resX_8_1 in : 159 x 159 x 128  out : 79 x 79 x 256 -- branch 1
-      RESX_info = {}
+      #CSP8_1 in : 159 x 159 x 128  out : 79 x 79 x 256 -- branch 1
+      CSPX_info = {}
 
       #num_of_res_unit
-      RESX_info["num_of_res_unit"] = 8
-
-      #CBL_1
-      RESX_info["CBL_1"] = (256,3,2,"valid")
+      CSPX_info["num_of_res_unit"] = 8
 
       #res_unit_info
+
       res_unit_1 = {}
       res_unit_1["CBM_1"] = (128,1,1,"same")
-      res_unit_1["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_1"] = res_unit_1
+      res_unit_1["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_1"] = res_unit_1
 
       res_unit_2 = {}
       res_unit_2["CBM_1"] = (128,1,1,"same")
-      res_unit_2["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_2"] = res_unit_2
+      res_unit_2["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_2"] = res_unit_2
 
       res_unit_3 = {}
       res_unit_3["CBM_1"] = (128,1,1,"same")
-      res_unit_3["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_3"] = res_unit_3
+      res_unit_3["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_3"] = res_unit_3
 
       res_unit_4 = {}
       res_unit_4["CBM_1"] = (128,1,1,"same")
-      res_unit_4["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_4"] = res_unit_4
+      res_unit_4["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_4"] = res_unit_4
 
       res_unit_5 = {}
       res_unit_5["CBM_1"] = (128,1,1,"same")
-      res_unit_5["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_5"] = res_unit_5
+      res_unit_5["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_5"] = res_unit_5
 
       res_unit_6 = {}
       res_unit_6["CBM_1"] = (128,1,1,"same")
-      res_unit_6["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_6"] = res_unit_6
+      res_unit_6["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_6"] = res_unit_6
 
       res_unit_7 = {}
       res_unit_7["CBM_1"] = (128,1,1,"same")
-      res_unit_7["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_7"] = res_unit_7
+      res_unit_7["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_7"] = res_unit_7
 
       res_unit_8 = {}
       res_unit_8["CBM_1"] = (128,1,1,"same")
-      res_unit_8["CBM_2"] = (256,3,1,"same")
-      RESX_info["res_unit_8"] = res_unit_8
+      res_unit_8["CBM_2"] = (128,3,1,"same")
+      CSPX_info["res_unit_8"] = res_unit_8
 
-      #resX_8_1 -- branch_1
-      self.resX_8_branch_1 = RESX(RESX_info)
+      #CBL_1
+      CSPX_info["CBL_1"] = (256,3,2,"valid")
+
+      #CBL_2
+      CSPX_info["CBL_2"] = (128,1,1,"same")
+
+      #CBL_3
+      CSPX_info["CBL_3"] = (128,1,1,"same")
+
+      #CBL_4
+      CSPX_info["CBL_4"] = (128,1,1,"same")
+
+      #CBM_1
+      CSPX_info["CBM_1"] = (256,1,1,"same")
+
+      #define CSP8_1 -- branch_1
+      self.CSP8_branch_1 = CSPX(CSPX_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #resX_8_2 in : 79 x 79 x 256 out : 39 x 39 x 512 --- branch_2
-      RESX_info = {}
+      #CSP8_2 in : 79 x 79 x 256 out : 39 x 39 x 512 --- branch_2
+      CSPX_info = {}
 
       #num_of_res_unit
-      RESX_info["num_of_res_unit"] = 8
-
-      #CBL_1
-      RESX_info["CBL_1"] = (512,3,2,"valid")
+      CSPX_info["num_of_res_unit"] = 8
 
       #res_unit_info
+
       res_unit_1 = {}
       res_unit_1["CBM_1"] = (256,1,1,"same")
-      res_unit_1["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_1"] = res_unit_1
+      res_unit_1["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_1"] = res_unit_1
 
       res_unit_2 = {}
       res_unit_2["CBM_1"] = (256,1,1,"same")
-      res_unit_2["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_2"] = res_unit_2
+      res_unit_2["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_2"] = res_unit_2
 
       res_unit_3 = {}
       res_unit_3["CBM_1"] = (256,1,1,"same")
-      res_unit_3["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_3"] = res_unit_3
+      res_unit_3["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_3"] = res_unit_3
 
       res_unit_4 = {}
       res_unit_4["CBM_1"] = (256,1,1,"same")
-      res_unit_4["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_4"] = res_unit_4
+      res_unit_4["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_4"] = res_unit_4
 
       res_unit_5 = {}
       res_unit_5["CBM_1"] = (256,1,1,"same")
-      res_unit_5["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_5"] = res_unit_5
+      res_unit_5["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_5"] = res_unit_5
 
       res_unit_6 = {}
       res_unit_6["CBM_1"] = (256,1,1,"same")
-      res_unit_6["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_6"] = res_unit_6
+      res_unit_6["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_6"] = res_unit_6
 
       res_unit_7 = {}
       res_unit_7["CBM_1"] = (256,1,1,"same")
-      res_unit_7["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_7"] = res_unit_7
+      res_unit_7["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_7"] = res_unit_7
 
       res_unit_8 = {}
       res_unit_8["CBM_1"] = (256,1,1,"same")
-      res_unit_8["CBM_2"] = (512,3,1,"same")
-      RESX_info["res_unit_8"] = res_unit_8
-      
-      #resX_8_2 -- branch_2
-      self.resX_8_branch_2 = RESX(RESX_info)
+      res_unit_8["CBM_2"] = (256,3,1,"same")
+      CSPX_info["res_unit_8"] = res_unit_8
+
+
+
+      #CBL_1
+      CSPX_info["CBL_1"] = (512,3,2,"valid")
+
+      #CBL_2
+      CSPX_info["CBL_2"] = (256,1,1,"same")
+
+      #CBL_3
+      CSPX_info["CBL_3"] = (256,1,1,"same")
+
+      #CBL_4
+      CSPX_info["CBL_4"] = (256,1,1,"same")
+
+      #CBM_1
+      CSPX_info["CBM_1"] = (512,1,1,"same")
+
+      #define CSP8_2 --- branch_2
+      self.CSP8_branch_2 = CSPX(CSPX_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #resX_4 in : 39 x 39 x 512 out : 19 x 19 x 1024
-      RESX_info = {}
+      #CSP4 in : 39 x 39 x 512 out : 19 x 19 x 1024
+      CSPX_info = {}
 
       #num_of_res_unit
-      RESX_info["num_of_res_unit"] = 4
-
-      #CBL_1
-      RESX_info["CBL_1"] = (1024,3,2,"valid")
+      CSPX_info["num_of_res_unit"] = 4
 
       #res_unit_info
+
       res_unit_1 = {}
       res_unit_1["CBM_1"] = (512,1,1,"same")
-      res_unit_1["CBM_2"] = (1024,3,1,"same")
-      RESX_info["res_unit_1"] = res_unit_1
+      res_unit_1["CBM_2"] = (512,3,1,"same")
+      CSPX_info["res_unit_1"] = res_unit_1
 
       res_unit_2 = {}
       res_unit_2["CBM_1"] = (512,1,1,"same")
-      res_unit_2["CBM_2"] = (1024,3,1,"same")
-      RESX_info["res_unit_2"] = res_unit_2
+      res_unit_2["CBM_2"] = (512,3,1,"same")
+      CSPX_info["res_unit_2"] = res_unit_2
 
       res_unit_3 = {}
       res_unit_3["CBM_1"] = (512,1,1,"same")
-      res_unit_3["CBM_2"] = (1024,3,1,"same")
-      RESX_info["res_unit_3"] = res_unit_3
+      res_unit_3["CBM_2"] = (512,3,1,"same")
+      CSPX_info["res_unit_3"] = res_unit_3
 
       res_unit_4 = {}
       res_unit_4["CBM_1"] = (512,1,1,"same")
-      res_unit_4["CBM_2"] = (1024,3,1,"same")
-      RESX_info["res_unit_4"] = res_unit_4
+      res_unit_4["CBM_2"] = (512,3,1,"same")
+      CSPX_info["res_unit_4"] = res_unit_4
 
-      #resX_4 
-      self.resX_4 = RESX(RESX_info)
+
+      #CBL_1
+      CSPX_info["CBL_1"] = (1024,3,2,"valid")
+
+      #CBL_2
+      CSPX_info["CBL_2"] = (512,1,1,"same")
+
+      #CBL_3
+      CSPX_info["CBL_3"] = (512,1,1,"same")
+
+      #CBL_4
+      CSPX_info["CBL_4"] = (512,1,1,"same")
+
+      #CBM_1
+      CSPX_info["CBM_1"] = (1024,1,1,"same")
+
+      #define CSP4
+      self.CSP4 = CSPX(CSPX_info)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
-      
+
       #AttentionModule_neck_1  in : 19 x 19 x 1024 out : 19 x 19 x 1024
       attention_info = {}
       attention_info["CBL_1"] = (1024,3,1,"same")
@@ -488,23 +554,23 @@ class alpha_model(tf.keras.Model):
       #CBM1
       CBM_1 = self.CBM_1(inputs,train_flag)
 
-      #resX_1
-      resX_1 = self.resX_1(CBM_1,train_flag)
+      #CSP1
+      CSP1 = self.CSP1(CBM_1,train_flag)
 
-      #resX_2
-      resX_2 = self.resX_2(resX_1,train_flag)
+      #CSP2
+      CSP2 = self.CSP2(CSP1,train_flag)
 
-      #resX_8_branch_1 ----------------------------------------- branch 1
-      resX_8_branch_1 = self.resX_8_branch_1(resX_2,train_flag)
+      #CSP8_branch_1 ----------------------------------------- branch 1
+      CSP8_branch_1 = self.CSP8_branch_1(CSP2,train_flag)
 
-      #resX_8_branch_2 ----------------------------------------- branch 2
-      resX_8_branch_2 = self.resX_8_branch_2(resX_8_branch_1,train_flag)
+      #CSP8_branch_2 ----------------------------------------- branch 2
+      CSP8_branch_2 = self.CSP8_branch_2(CSP8_branch_1,train_flag)
 
-      #resX_4
-      resX_4 = self.resX_4(resX_8_branch_2,train_flag)
+      #CSP4
+      CSP4 = self.CSP4(CSP8_branch_2,train_flag)
 
       #AttentionModule_neck_1
-      AttentionModule_neck_1 = self.AttentionModule_neck_1(resX_4,train_flag)
+      AttentionModule_neck_1 = self.AttentionModule_neck_1(CSP4,train_flag)
 
       #AttentionModule_neck_2
       AttentionModule_neck_2 = self.AttentionModule_neck_2(AttentionModule_neck_1,train_flag)
@@ -528,7 +594,7 @@ class alpha_model(tf.keras.Model):
       TCBL1 = self.TCBL1(CBL_7_neck,train_flag)
 
       #CBL_connect_branch_2
-      CBL_connect_branch_2 = self.CBL_connect_branch_2(resX_8_branch_2,train_flag)
+      CBL_connect_branch_2 = self.CBL_connect_branch_2(CSP8_branch_2,train_flag)
 
       #concat TCBL1 -- CBL_connect_branch_2
       concat_TCBL1_CBL_connect_branch_2 = tf.keras.layers.concatenate(inputs=[TCBL1,CBL_connect_branch_2],axis=-1)
@@ -555,7 +621,7 @@ class alpha_model(tf.keras.Model):
       TCBL2 = self.TCBL2(CBL_6_phase1,train_flag)
 
       #CBL_connect_branch_1
-      CBL_connect_branch_1 = self.CBL_connect_branch_1(resX_8_branch_1,train_flag)
+      CBL_connect_branch_1 = self.CBL_connect_branch_1(CSP8_branch_1,train_flag)
 
       #concat TCBL2 -- CBL_connect_branch_1 , out: 79 x 79 x 256
       concat_TCBL2_CBL_connect_branch_1 = tf.keras.layers.concatenate(inputs=[TCBL2,CBL_connect_branch_1],axis=-1)
