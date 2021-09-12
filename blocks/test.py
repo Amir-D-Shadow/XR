@@ -70,7 +70,7 @@ if __name__ == "__main__":
    b = tf.constant(np.random.randn(3,3,4))
    c = tf.reshape(b,(-1,4))
    """
-   
+   """
    y_true = tf.constant(np.random.randn(3,3,4))
 
    ignore_mask = tf.TensorArray(K.dtype(y_true), size=1, dynamic_size=True)
@@ -100,4 +100,24 @@ if __name__ == "__main__":
    ignore_mask = ignore_mask.write(0, K.cast(best_iou<0.5, K.dtype(true_box)))
 
    res = ignore_mask.stack()
- 
+   """
+
+   q = tf.constant(np.random.randn(5,5,9))
+   k = tf.constant(np.random.randn(5,5,9))
+   v = tf.constant(np.random.randn(5,5,9))
+
+   q = q[:,:,tf.newaxis,:]
+
+   k = tf.reshape(k,(-1,9))
+
+   v = tf.reshape(k,(-1,9))
+
+   res1 = q*k
+
+   res2 = K.sum(res1,axis=-1)
+
+   res3 = tf.keras.layers.Softmax(axis=-1)(res2)
+
+   v = K.cast(v,K.dtype(res3))
+
+   output = tf.matmul(res3,v)
