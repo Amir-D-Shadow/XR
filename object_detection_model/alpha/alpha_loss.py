@@ -3,6 +3,7 @@ import tensorflow.keras.backend as K
 import numpy  as np
 from matplotlib import pyplot as plt
 from AttentionModule_lambda_version import AttentionModule
+from Fourier_Attention_Module import FourierAttentionModule
 
 class alpha_loss(tf.keras.losses.Loss):
 
@@ -284,13 +285,22 @@ if __name__ == "__main__":
    y_true = tf.constant(value = np.random.randn(10,38,38,89),dtype=np.float64)
    y_true = np.clip(y_true,0.0,1.0)
    data = tf.constant(value= np.random.randn(10,40,40,3),dtype=np.float64)
-
+   """
    attention_info = {}
    attention_info["CBL_1"] = (20,3,1,"same")
    attention_info["conv_query"] = (20,3,1,"same")
    attention_info["conv_keys"] = (20,3,1,"same")
    attention_info["conv_values"] = (20,3,1,"same")
+   """
 
+   attention_info = {}
+   attention_info["CBL_1"] = (64,3,1,"same")
+   attention_info["CBL_Q"] = (64,3,1,"same")
+   attention_info["CBL_K"] = (64,3,1,"same")
+   attention_info["CBL_V"] = (64,3,1,"same")
+   attention_info["CBL_TU"] = (64,3,1,"same")
+   attention_info["CBL_TL"] = (64,3,1,"same")
+   
    x = tf.keras.layers.Input(shape =(40,40,3))
    strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 
@@ -311,7 +321,8 @@ if __name__ == "__main__":
      k1 = tf.keras.layers.Conv2D(512,3,1,"valid",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())(x)
      h2 = tf.keras.layers.BatchNormalization(axis=-1)(k1)
      a1 = tf.keras.layers.LeakyReLU()(h2)
-     AttentionModule_1 = AttentionModule(attention_info)(a1)
+     #AttentionModule_1 = AttentionModule(attention_info)(a1)
+     AttentionModule_1 = FourierAttentionModule(attention_info)(a1)
      p2 = tf.keras.layers.Conv2D(512,3,1,"same",data_format="channels_last")(AttentionModule_1)
      h3 = tf.keras.layers.BatchNormalization(axis=-1)(p2)
      a2 = tf.keras.layers.LeakyReLU()(h3)
