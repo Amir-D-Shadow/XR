@@ -31,60 +31,32 @@ class fourier_attention_step_process_layer(tf.keras.layers.Layer):
    def call(self,inputs):
 
       """
-      inputs: list [query,keys,TU,TL,values] -- [CBL_Q,CBL_K,CBL_TU,CBL_TL,CBL_V]
+      inputs: list [keys,TU,TL] -- [CBL_K,CBL_TU,CBL_TL]
 
-       query -- (m,h,w,c)
        keys -- (m,h,w,c)
        threshold -- (m,h,w,c)
-       values -- (m,h,w,c)
+
       """
-      query = inputs[0]
-      keys = inputs[1]
-      TU = inputs[2]
-      TL = inputs[3]
-      values = inputs[4]
+
+      keys = inputs[0]
+      TU = inputs[1]
+      TL = inputs[2]
       
-      """
-      process:(backup)
-
-      query ------------------------------------------------------------------------
-                                                                                   |
-                                                                                   |
-                  TU_(1x1xC)--------------------|                                  |--- Softmax[ query +  FFT_keys_spatial_iFFT ]------
-                                                |                                  |                                                  |
-               |-------- keys ------------------ ==== FFT_keys_spatial_iFFT -------|                                                  |
-               |                                |                                                                                     | 
-               |  TL_(1x1xC) -------------------|                                                                                     |
-               |                                                                                                                      |
-       key ----|                                                                                                                      |
-               |   TU_(HxWx1)-------------------|                                                                                     |----------- values * Softmax[ query +  FFT_keys_spatial_iFFT ] * Softmax[ query +  FFT_keys_channels_iFFT ]
-               |                                |                                                                                     |
-               |-------- keys ------------------ ==== FFT_keys_channels_iFFT ------|                                                  |
-                                                |                                  |                                                  |
-                  TL_(HxWx1) -------------------|                                  |--- Softmax[ query +  FFT_keys_channels_iFFT ]----|
-                                                                                   |                                                  |
-                                                                                   |                                                  |
-      query -----------------------------------------------------------------------|                                                  |              
-                                                                                                                                      |                          
-      values --------------------------------------------------------------------------------------------------------------------------
-
-      """
 
       """
       process:
 
-      query ------------------------------------------------------------------------------------------
-                                                                                                     |
-                                                                                                     |
-      TU -------------------------------------                                                       |
-                                             |                                                       |
-                                             |                                                       |                                
-      key --------------------------------------------FFT_filter_iFFT_key-------------- Softmax(FFT_filter_iFFT_key + query)-------------- values * Softmax(FFT_filter_iFFT_key + query)                                                                                                              |
-                                             |                                                                                                                   |       
-                                             |                                                                                                                   | 
-      TL -------------------------------------                                                                                                                   |
-                                                                                                                                                                 |                          
-      values -----------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                     
+                                                                                                     
+      TU -------------------------------------                                                       
+                                             |                                                       
+                                             |                                                                                     
+      key --------------------------------------------FFT_filter_iFFT_key                                                                                                             |
+                                             |                                                                                                                     
+                                             |                                                                                                                   
+      TL -------------------------------------                                                                                                                   
+                                                                                                                                                                                           
+      
 
       """
 
@@ -100,8 +72,8 @@ class fourier_attention_step_process_layer(tf.keras.layers.Layer):
       feat_TL = K.sum(TL,axis=(1,2,3),keepdims=True)
       feat_TL = K.cast(feat_TL,dtype=K.dtype(self.alphaU))
 
-      #Get FFT FFT key -- (m,h,w,c)
-      feat_keys_FT = tf.signal.fft3d( tf.signal.fft3d(feat_keys) )
+      #Get FFT key -- (m,h,w,c)
+      feat_keys_FT = tf.signal.fft3d(feat_keys) 
 
       #Get real part -- (m,h,w,c)
       feat_keys_FT_real = tf.math.real(feat_keys_FT)
@@ -123,20 +95,16 @@ class fourier_attention_step_process_layer(tf.keras.layers.Layer):
       #update filtered feat_keys_FT -- (m,h,w,c)
       feat_keys_FT = feat_keys_FT - tmp_max_residue - tmp_min_residue
 
-      #get inverse FFT FFT key -- (m,h,w,c)
-      iFT_feat_keys = tf.signal.ifft3d( tf.signal.ifft3d(feat_keys_FT) )
+      #get inverse FFT key -- (m,h,w,c)
+      iFT_feat_keys = tf.signal.ifft3d(feat_keys_FT)
 
-      #Get QK_additive -- (m,h,w,c)
-      QK_additive = K.cast( tf.math.abs(iFT_feat_keys),dtype=K.dtype(query) ) + query
+      #get output
+      output_keys = tf.math.real(iFT_feat_keys)
 
-      #softmax activated -- (m,h,w,c)
-      activated_QK = tf.keras.layers.Softmax(axis=(1,2,3))(QK_additive)
-
-      #attention -- (m,h,w,c)
-      output_values = values * activated_QK
+      output_keys = K.cast(output_keys,K.dtype(keys))
 
 
-      return output_values
+      return output_keys
    
          
 
@@ -150,23 +118,19 @@ class FourierAttentionModule(tf.keras.Model):
 
       """
 
-      attention_info -- dictionary containing information: CBL_1,CBL_Q,CBL_K,CBL_Tmax,CBL_Tmin,CBL_V 
+      attention_info -- dictionary containing information: CBL_1,CBL_TU,CBL_K,CBL_TL
 
                      
       Module Graph:
       
-                ___________________________________________________________________________
-               |                                                                           |
-               |                                                                           |
-               |                                                                           |
-               |     ----- CBL_Q ------------                                              |
-               |     |                      |                                              |
-      CBL1 ----------|---- CBL_K -----------|--- fourier_attention_step_process_layer --- Add --- LN --- leaky relu 
+
+                                                                                       
+                     ----- CBL_TU -----------                                              
+                     |                      |                                              
+      CBL1 ----------|---- CBL_K -----------|--- fourier_attention_step_process_layer 
                      |                      |
-                     |---- CBL_TU ----------|
                      |---- CBL_TL ----------|
-                     |                      |
-                     ----- CBL_V ------------
+
       
       """
 
@@ -176,11 +140,6 @@ class FourierAttentionModule(tf.keras.Model):
       filters,kernel_size,strides,padding = attention_info["CBL_1"]
       
       self.CBL_1 = CBL(filters,kernel_size,strides,padding)
-
-      #CBL_Q
-      filters,kernel_size,strides,padding = attention_info["CBL_Q"]
-
-      self.CBL_Q = CBL(filters,kernel_size,strides,padding)
 
       #CBL_K
       filters,kernel_size,strides,padding = attention_info["CBL_K"]
@@ -197,22 +156,8 @@ class FourierAttentionModule(tf.keras.Model):
 
       self.CBL_TL = CBL(filters,kernel_size,strides,padding)
 
-      #CBL_V
-      filters,kernel_size,strides,padding = attention_info["CBL_V"]
-
-      self.CBL_V = CBL(filters,kernel_size,strides,padding)
-
       #fourier_attention
       self.fourier_attention = fourier_attention_step_process_layer()
-
-      #Add layer
-      self.Add_layer = tf.keras.layers.Add()
-
-      #LN_1
-      self.LN_1 = tf.keras.layers.LayerNormalization(axis=[1, 2, 3])
-
-      #leakyRelu
-      self.output_leakyrelu = tf.keras.layers.LeakyReLU()
 
 
 
@@ -220,9 +165,6 @@ class FourierAttentionModule(tf.keras.Model):
 
       #CBL_1
       CBL_1 = self.CBL_1(inputs,train_flag)
-
-      #CBL_Q
-      CBL_Q = self.CBL_Q(CBL_1,train_flag)
 
       #CBL_K
       CBL_K = self.CBL_K(CBL_1,train_flag)
@@ -233,22 +175,12 @@ class FourierAttentionModule(tf.keras.Model):
       #CBL_TL
       CBL_TL = self.CBL_TL(CBL_1,train_flag)
 
-      #CBL_V
-      CBL_V = self.CBL_V(CBL_1,train_flag)
 
       #fourier_attention
-      fourier_attention = self.fourier_attention((CBL_Q,CBL_K,CBL_TU,CBL_TL,CBL_V))
+      fourier_attention = self.fourier_attention((CBL_K,CBL_TU,CBL_TL))
 
-      #Add layer
-      Add_layer = self.Add_layer([CBL_1,fourier_attention])
 
-      #layer normalization
-      LN_1 = self.LN_1(Add_layer,training = train_flag)
-
-      #output_leakyrelu
-      output_leakyrelu = self.output_leakyrelu(LN_1)
-
-      return output_leakyrelu
+      return fourier_attention
       
 
    def graph_model(self,dim):
