@@ -1,186 +1,161 @@
 import tensorflow as tf
-from tensorflow.keras import backend as K
+from tensorflow.python.keras import backend as K
 import numpy as np
-import math
-from CBL import CBL
-
-class fourier_attention_step_process_layer(tf.keras.layers.Layer):
-
-   def __init__(self):
-
-      super(fourier_attention_step_process_layer,self).__init__()
-      
-
-   def build(self,input_shape):
-
-      """
-      lower bound: maximum(val - alphaL,TL)
-      
-      upper bound: maximum(alphaU - val,TU)
-      """
-
-      #threshold
-      self.alphaL = tf.Variable(name="alphaL",initial_value=tf.random_normal_initializer()(shape=(1,),dtype="float64"),trainable=True)
-      self.alphaU = tf.Variable(name="alphaU",initial_value=tf.random_normal_initializer()(shape=(1,),dtype="float64"),trainable=True)
-
-      #scale factor
-      self.betaL =  tf.Variable(name="betaL",initial_value=tf.random_normal_initializer()(shape=(1,),dtype="float64"),trainable=True)
-      self.betaU =  tf.Variable(name="betaU",initial_value=tf.random_normal_initializer()(shape=(1,),dtype="float64"),trainable=True)
+from ResMLP import ResMLP
 
       
-   def call(self,inputs):
+class FourierModule(tf.keras.Model):
 
-      """
-      inputs: list [keys,TU,TL] -- [CBL_K,CBL_TU,CBL_TL]
 
-       keys -- (m,h,w,c)
-       threshold -- (m,h,w,c)
+   def __init__(self,F_info,**kwargs):
 
       """
 
-      keys = inputs[0]
-      TU = inputs[1]
-      TL = inputs[2]
-      
-
-      """
-      process:
-
-                                                                                                     
-                                                                                                     
-      TU -------------------------------------                                                       
-                                             |                                                       
-                                             |                                                                                     
-      key --------------------------------------------FFT_filter_iFFT_key                                                                                                             |
-                                             |                                                                                                                     
-                                             |                                                                                                                   
-      TL -------------------------------------                                                                                                                   
-                                                                                                                                                                                           
-      
-
-      """
-
-
-      #cast type for key -- (m,h,w,c)
-      feat_keys = K.cast(keys,dtype=tf.complex128)
-
-
-      #set up --- (m,1,1,1)
-      feat_TU = K.sum(TU,axis=(1,2,3),keepdims=True)
-      feat_TU = K.cast(feat_TU,dtype=K.dtype(self.alphaU))
-      
-      feat_TL = K.sum(TL,axis=(1,2,3),keepdims=True)
-      feat_TL = K.cast(feat_TL,dtype=K.dtype(self.alphaU))
-
-      #Get FFT key -- (m,h,w,c)
-      feat_keys_FT = tf.signal.fft3d(feat_keys) 
-
-      #Get real part -- (m,h,w,c)
-      feat_keys_FT_real = tf.math.real(feat_keys_FT)
-      feat_keys_FT_real = K.cast(feat_keys_FT_real,dtype=K.dtype(feat_TU))
-
-
-      #filtering min -- (m,h,w,c)
-      tmp_min_residue = feat_keys_FT_real * K.maximum( feat_keys_FT_real - feat_TL , self.alphaL ) / (feat_keys_FT_real - self.betaL * feat_TL )
-      tmp_min_residue = feat_keys_FT_real - tmp_min_residue
-      
-      tmp_min_residue = K.cast(tmp_min_residue,dtype=K.dtype(feat_keys_FT))
-
-      #filtering max -- (m,h,w,c)
-      tmp_max_residue = feat_keys_FT_real * K.maximum( feat_TU - feat_keys_FT_real , self.alphaU ) / (self.betaU * feat_TU - feat_keys_FT_real )
-      tmp_max_residue = feat_keys_FT_real - tmp_max_residue
-
-      tmp_max_residue = K.cast(tmp_max_residue,dtype=K.dtype(feat_keys_FT))
-
-      #update filtered feat_keys_FT -- (m,h,w,c)
-      feat_keys_FT = feat_keys_FT - tmp_max_residue - tmp_min_residue
-
-      #get inverse FFT key -- (m,h,w,c)
-      iFT_feat_keys = tf.signal.ifft3d(feat_keys_FT)
-
-      #get output
-      output_keys = tf.math.real(iFT_feat_keys)
-
-      output_keys = K.cast(output_keys,K.dtype(keys))
-
-
-      return output_keys
-   
-         
-
-
-      
-
-class FourierAttentionModule(tf.keras.Model):
-
-
-   def __init__(self,attention_info,**kwargs):
-
-      """
-
-      attention_info -- dictionary containing information: CBL_1,CBL_TU,CBL_K,CBL_TL
+      attention_info -- dictionary containing information: units,MLP_num,output_units
 
                      
       Module Graph:
       
 
-                                                                                       
-                     ----- CBL_TU -----------                                              
-                     |                      |                                              
-      CBL1 ----------|---- CBL_K -----------|--- fourier_attention_step_process_layer 
-                     |                      |
-                     |---- CBL_TL ----------|
+                                                                                                                                  
+      inputs --------- FFT -- ResMLP * n ------- filtering ----  iFFT 
+
 
       
       """
 
-      super(FourierAttentionModule,self).__init__(**kwargs)
+      super(FourierModule,self).__init__(**kwargs)
 
-      #CBL_1
-      filters,kernel_size,strides,padding = attention_info["CBL_1"]
+      self.units = F_info["units"]
+      self.MLP_num = F_info["MLP_num"]
+
+
+      self.input_MLP = tf.keras.layers.Dense(self.units)
+      self.input_norm = tf.keras.layers.LayerNormalization(axis=-1)
+      self.input_act = tf.keras.layers.LeakyReLU()
+
+      self.ResMLP_block = {}
+
+      for i in range(1,self.MLP_num+1):
+
+         self.ResMLP_block[f"ResMLP_{i}"] = ResMLP(self.units)
+
+      self.output_units = F_info["output_units"]
       
-      self.CBL_1 = CBL(filters,kernel_size,strides,padding)
-
-      #CBL_K
-      filters,kernel_size,strides,padding = attention_info["CBL_K"]
-
-      self.CBL_K = CBL(filters,kernel_size,strides,padding)
-
-      #CBL_TU
-      filters,kernel_size,strides,padding = attention_info["CBL_TU"]
-
-      self.CBL_TU = CBL(filters,kernel_size,strides,padding)
-
-      #CBL_TL
-      filters,kernel_size,strides,padding = attention_info["CBL_TL"]
-
-      self.CBL_TL = CBL(filters,kernel_size,strides,padding)
-
-      #fourier_attention
-      self.fourier_attention = fourier_attention_step_process_layer()
-
+      self.output_MLP = tf.keras.layers.Dense(self.output_units)
+      self.output_norm = tf.keras.layers.LayerNormalization(axis=-1)
+      self.output_act = tf.keras.layers.LeakyReLU()
 
 
    def call(self,inputs,train_flag=True):
 
-      #CBL_1
-      CBL_1 = self.CBL_1(inputs,train_flag)
+      #FFT
+      feat_FT = tf.signal.fft3d(K.cast(inputs,tf.complex128))
 
-      #CBL_K
-      CBL_K = self.CBL_K(CBL_1,train_flag)
+      #real
+      feat_FT_real = tf.math.real( feat_FT )
 
-      #CBL_TU
-      CBL_TU = self.CBL_TU(CBL_1,train_flag)
+      #imag
+      feat_FT_imag = tf.math.imag( feat_FT )
+      feat_FT_imag = K.cast(feat_FT_imag,K.dtype(feat_FT_real))
 
-      #CBL_TL
-      CBL_TL = self.CBL_TL(CBL_1,train_flag)
+      #set up
+      feat_analysis_inputs = tf.TensorArray(tf.float64,size=1,dynamic_size=True)
+
+      #mean 
+      feat_mean = tf.math.reduce_mean(feat_FT_real,axis=(1,2,3))
+      feat_analysis_inputs = feat_analysis_inputs.write(0,feat_mean)
+
+      #var
+      feat_var = tf.math.reduce_variance(feat_FT_real,axis=(1,2,3))
+      feat_analysis_inputs = feat_analysis_inputs.write(1,feat_var)
+
+      #percentile
+      for i in range(1,20):
+
+       val = tfp.stats.percentile(feat_FT_real,i*5,axis=(1,2,3),interpolation="linear")
+       feat_analysis_inputs = feat_analysis_inputs.write(i+1,val)
 
 
-      #fourier_attention
-      fourier_attention = self.fourier_attention((CBL_K,CBL_TU,CBL_TL))
+      #stack tensor -- (21,m)
+      feat_analysis_inputs = feat_analysis_inputs.stack()
+
+      #reshape -- (m,21)
+      feat_analysis_inputs = tf.reshape(feat_analysis_inputs,shape=(-1,21))
 
 
-      return fourier_attention
+      ################# ResMLP Filtering #################
+
+      input_MLP = self.input_MLP(feat_analysis_inputs)
+      input_norm = self.input_norm(input_MLP,training=train_flag)
+      input_act = self.input_act(input_norm)
+
+      ResMLP_block = input_act
+      
+      for i in range(1,self.MLP_num+1):
+
+         ResMLP_block = (self.ResMLP_block[f"ResMLP_{i}"])(ResMLP_block,train_flag)
+         
+
+      output_MLP = self.output_MLP(ResMLP_block)
+      output_norm = self.output_norm(output_MLP,training=train_flag)
+      output_act = self.output_act(output_norm)
+
+      ################# ResMLP Filtering #################
+
+      # Tensor output_act [TU1,TL1,TU2,TL2,TU3,TL3]
+
+      #first interval
+      TU = output_act[:,0]
+      TU = TU[:,tf.newaxis,tf.newaxis,tf.newaxis]
+      TU = K.cast(TU,K.dtype(feat_FT_real))
+      TU_filtering = K.maximum( TU -feat_FT_real ,0 ) / (TU -feat_FT_real)
+
+      TL = output_act[:,1]
+      TL = TL[:,tf.newaxis,tf.newaxis,tf.newaxis]
+      TL = K.cast(TL,K.dtype(feat_FT_real))
+      TL_filtering = K.maximum( TU_filtering - TL, 0 )  / (TU_filtering - TL)
+
+      final_tensor = TL_filtering
+
+      #second interval
+      TU = output_act[:,2]
+      TU = TU[:,tf.newaxis,tf.newaxis,tf.newaxis]
+      TU = K.cast(TU,K.dtype(feat_FT_real))
+      TU_filtering = K.maximum( TU -final_tensor ,0 ) / (TU -final_tensor)
+
+      TL = output_act[:,3]
+      TL = TL[:,tf.newaxis,tf.newaxis,tf.newaxis]
+      TL = K.cast(TL,K.dtype(feat_FT_real))
+      TL_filtering = K.maximum( TU_filtering - TL, 0 )  / (TU_filtering - TL)
+
+      final_tensor = TL_filtering
+
+      #third interval
+      TU = output_act[:,4]
+      TU = TU[:,tf.newaxis,tf.newaxis,tf.newaxis]
+      TU = K.cast(TU,K.dtype(feat_FT_real))
+      TU_filtering = K.maximum( TU -final_tensor ,0 ) / (TU -final_tensor)
+
+      TL = output_act[:,5]
+      TL = TL[:,tf.newaxis,tf.newaxis,tf.newaxis]
+      TL = K.cast(TL,K.dtype(feat_FT_real))
+      TL_filtering = K.maximum( TU_filtering - TL, 0 )  / (TU_filtering - TL)
+
+      final_tensor = TL_filtering
+
+
+      #final result
+      final_tensor = K.cast(final_tensor,K.dtype(feat_FT_real))
+
+      final_tensor = tf.complex(final_tensor,feat_FT_imag)
+      final_tensor = K.cast(final_tensor,K.dtype(feat_FT))
+
+      #iFFT
+      output_iFFT = tf.signal.ifft3d(final_tensor)
+      output_iFFT = K.cast(output_iFFT,K.dtype(inputs))
+
+      return output_iFFT
       
 
    def graph_model(self,dim):
