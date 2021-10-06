@@ -1,57 +1,62 @@
 import tensorflow as tf
+from CBL import CBL
+
 
 
 class ChainLayer(tf.keras.layers.Layer):
 
-    def __init__(self,feat_alpha=0.03,feat_scale = 1,**kwargs):
+    def __init__(self,chain_info,**kwargs):
+
+        """
+
+        chain_info -- dictionary containing information: CBL_Q ,CBL_O,DSC
+
+                     
+        Module Graph:
+
+        inputs ----------CBL_Q -------  similarity process: CBL_K --- DSC
+
+
+        """
 
         super(ChainLayer,self).__init__(**kwargs)
 
-        self.layer_scale = feat_scale
+        #CBL_Q
+        filters,kernel_size,strides,padding = chain_info["CBL_Q"]
         
-        self.layer_alpha = feat_alpha
+        self.CBL_Q = CBL(filters,kernel_size,strides,padding)
+        
+
+        #DSC BN act
+        filters,kernel_size,strides,padding = chain_info["DSC"]
+        
+        self.DSC = tf.keras.layers.SeparableConv2D(filters=filters,kernel_size=kernel_size,strides=strides,padding=padding,data_format="channels_last")#CBL(filters,kernel_size,strides,padding)
 
         self.BN = tf.keras.layers.BatchNormalization(axis=-1)
+
+        self.act = tf.keras.layers.LeakyReLU(alpha=0.03)
+
         
-
-    def build(self,input_shape):
-
-        #scale dimension
-        H_W = input_shape[1]*input_shape[2] * self.layer_scale
-
-        H_W = tf.cast(H_W,dtype=tf.int64)
-
-        #initialization
-        self.K_Kernel = tf.Variable(name="K Kernel",initial_value=tf.random_normal_initializer()(shape=(input_shape[-1],H_W),dtype=tf.float64),trainable=True)
-
-        self.V_Kernel = tf.Variable(name="V Kernel",initial_value=tf.random_normal_initializer()(shape=(H_W,input_shape[-1]),dtype=tf.float64),trainable=True)
-
-        self.V_bias = tf.Variable(name="V Bias",initial_value=tf.random_normal_initializer()(shape=(1,1,1,input_shape[-1]),dtype=tf.float64),trainable=True)
-
 
     def call(self,inputs,train_flag=True):
 
         """
         inputs : (m,h,w,c)
-        K_Kernel : (c,h x w)
-        V_Kernel : (h x w,c)
-        V_bias: (1,1,1,c) 
+        V_bias: (1,1,1,h x w) 
         """
 
-        #cast input type to fit the kernel's type
-        x = tf.keras.backend.cast(inputs,dtype=tf.float64)
+        #CBL_Q
+        CBL_Q = self.CBL_Q(inputs,train_flag)
 
-        #output_M: (m,H,W,H_W)
-        output_M = tf.matmul(x,self.K_Kernel)
+        #similarity CBL_K
+        CBL_K = self.CBL_K(CBL_Q,train_flag)
 
-        output_M = self.BN(output_M,training=train_flag)
+        #output_M: (m,h,w,c)
+        DSC = self.DSC(CBL_K)
+        
+        output_M = self.BN(DSC,training=train_flag)
 
-        #output_M: (m,H,W,H_W)
-        output_M = tf.math.maximum(output_M, self.layer_alpha * output_M )
-
-        output_M = tf.cast(output_M,dtype=tf.float64)
-
-        #output_M: (m,H,W,c)
-        output_M = tf.matmul(output_M,self.V_Kernel) + self.V_bias
+        output_M = self.act(output_M)
+        
 
         return output_M
