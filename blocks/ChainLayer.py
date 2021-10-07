@@ -48,11 +48,8 @@ class ChainLayer(tf.keras.layers.Layer):
         #CBL_Q
         CBL_Q = self.CBL_Q(inputs,train_flag)
 
-        #similarity CBL_K
-        CBL_K = self.CBL_K(CBL_Q,train_flag)
-
         #output_M: (m,h,w,c)
-        DSC = self.DSC(CBL_K)
+        DSC = self.DSC(CBL_Q)
         
         output_M = self.BN(DSC,training=train_flag)
 
