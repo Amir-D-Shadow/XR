@@ -34,7 +34,7 @@ def attention_step_process_layer(input_list):
 
     if m is None:
 
-       m = 10
+       return query
 
     #get number of channel
     num_of_channels = query.shape[-1]
@@ -147,7 +147,7 @@ class AttentionModule(tf.keras.Model):
       self.Add_layer = tf.keras.layers.Add()
 
       #LN_1
-      self.LN_1 = tf.keras.layers.LayerNormalization(axis=[1,2,3])
+      self.LN_1 = tf.keras.layers.LayerNormalization(axis=[1, 2, 3])
 
       #leakyRelu
       self.output_leakyrelu = tf.keras.layers.LeakyReLU()

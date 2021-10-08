@@ -93,11 +93,11 @@ class fourier_attention_step_process_layer(tf.keras.layers.Layer):
       feat_keys = K.cast(keys,dtype=tf.complex128)
 
 
-      #set up --- (m,1,1,1)
-      feat_TU = K.sum(TU,axis=(1,2,3),keepdims=True)
+      #set up --- (m,h,w,c)
+      feat_TU = TU #K.sum(TU,axis=(1,2,3),keepdims=True)
       feat_TU = K.cast(feat_TU,dtype=K.dtype(self.alphaU))
       
-      feat_TL = K.sum(TL,axis=(1,2,3),keepdims=True)
+      feat_TL = TL #K.sum(TL,axis=(1,2,3),keepdims=True)
       feat_TL = K.cast(feat_TL,dtype=K.dtype(self.alphaU))
 
       #Get FFT FFT key -- (m,h,w,c)

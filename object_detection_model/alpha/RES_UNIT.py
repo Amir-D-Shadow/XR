@@ -1,5 +1,5 @@
 import tensorflow as tf
-from CBM import CBM
+from CBL import CBL
 
 class res_unit(tf.keras.Model):
 
@@ -10,7 +10,7 @@ class res_unit(tf.keras.Model):
 
       Module Graph:
 
-      ------ CBM_1 ------ CBM_2 ------ Add
+      ------ CBL_1 ------ CBL_2 ------ Add
          |                              |
          |                              |
          |                              |
@@ -22,15 +22,15 @@ class res_unit(tf.keras.Model):
       #initialization
       super(res_unit,self).__init__(**kwargs)
       
-      #1st CBM block
-      filters,kernel_size,strides,padding = block_info["CBM_1"]
+      #1st CBL block
+      filters,kernel_size,strides,padding = block_info["CBL_1"]
       
-      self.CBM_1 = CBM(filters,kernel_size,strides,padding)
+      self.CBL_1 = CBL(filters,kernel_size,strides,padding)
 
-      #2nd CBM block
-      filters,kernel_size,strides,padding = block_info["CBM_2"]
+      #2nd CBL block
+      filters,kernel_size,strides,padding = block_info["CBL_2"]
 
-      self.CBM_2 = CBM(filters,kernel_size,strides,padding)
+      self.CBL_2 = CBL(filters,kernel_size,strides,padding)
 
       #Add Layer
       self.Add_layer = tf.keras.layers.Add()
@@ -40,13 +40,13 @@ class res_unit(tf.keras.Model):
 
       x = inputs
 
-      #1st CBM block
-      CBM_1 = self.CBM_1(inputs,train_flag)
+      #1st CBL block
+      CBL_1 = self.CBL_1(inputs,train_flag)
 
-      #2nd CBM block
-      CBM_2 = self.CBM_2(CBM_1,train_flag)
+      #2nd CBL block
+      CBL_2 = self.CBL_2(CBL_1,train_flag)
 
       #Add Layer
-      output_shortcut = self.Add_layer([CBM_2,x])
+      output_shortcut = self.Add_layer([CBL_2,x])
 
       return output_shortcut
