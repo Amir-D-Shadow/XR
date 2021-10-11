@@ -2,6 +2,9 @@ import tensorflow as tf
 import tensorflow.python.keras.backend as K
 import numpy as np
 
+from CBL import CBL
+from TCBL import TCBL
+from GroupAttentionLayer import GroupAttentionLayer
 
 def func1(**kwargs):
 
@@ -24,6 +27,32 @@ def func3(info,**kwargs):
    for val in info.values():
 
       print(val)
+
+def build_model_single(M_info):
+
+  inputs_x = tf.keras.layers.Input(shape=(32,32,3))
+
+  
+  CBL_0 = CBL(64,3,1,"same")(inputs_x)
+  MP0 = tf.keras.layers.MaxPool2D(2)(CBL_0)
+  
+  ga0 = GroupAttentionLayer(M_info)(MP0)
+  CBL_1 = CBL(64,3,1,"same")(ga0)
+
+  Add_0 = tf.keras.layers.Add()([MP0,CBL_1])
+  TCBL_0 = TCBL(64,3,1,"valid")(Add_0)
+  
+  MP1 = tf.keras.layers.MaxPool2D(2)(TCBL_0)
+  
+  Flatten_1 = tf.keras.layers.Flatten()(MP1)
+  dense1 = tf.keras.layers.Dense(64,activation=tf.keras.layers.LeakyReLU())(Flatten_1)
+  dense_out = tf.keras.layers.Dense(10)(dense1)
+
+  model = tf.keras.Model(inputs=inputs_x,outputs=dense_out)
+
+  model.compile(optimizer="adam",loss= tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),metrics= ["accuracy"])
+
+  return  model
 
 if __name__ == "__main__":
 
@@ -178,6 +207,7 @@ if __name__ == "__main__":
 
    """
 
+   """
    array = tf.TensorArray(tf.float64,size=1,dynamic_size=True)
 
    data = tf.constant(np.random.randn(10,32,32,64))
@@ -213,3 +243,46 @@ if __name__ == "__main__":
    array = array.stack()
 
    res = tf.keras.layers.SeparableConv2D(16,1,1,"same")(data)
+   """
+
+   """
+   array = tf.TensorArray(tf.float64,size=1,dynamic_size=True)
+   
+   a = tf.constant(np.random.randn(10,1,1,16))
+   b = tf.constant(np.random.randn(10,1,1,16))
+   c = tf.constant(np.random.randn(10,1,1,16))
+   d = tf.constant(np.random.randn(10,1,1,16))
+   e = tf.constant(np.random.randn(10,1,1,16))
+   f = tf.constant(np.random.randn(10,1,1,16))
+
+   array = array.write(0,a)
+   array = array.write(1,b)
+   array = array.write(2,c)
+   array = array.write(3,d)
+   array = array.write(4,e)
+   array = array.write(5,f)
+   """
+
+
+   """
+   
+   (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
+   
+   one_device_strategy = tf.distribute.OneDeviceStrategy(device="GPU:0")
+
+
+
+   model_cluster = {}
+   with one_device_strategy.scope():
+
+       ga_info = {}
+       ga_info["CBL_Q"] = (64,3,1,"same")
+       ga_info["CBL_K"] = (64,3,1,"same")
+       ga_info["TCBL_out"] = (64,3,1,"valid")
+       ga_info["receptive_field"] = 3
+       ga_info["sim_strides"] = 1
+
+       model = build_model_single(ga_info)
+
+   history_FA0 = model.fit(train_images,train_labels,epochs=10,batch_size=64,validation_data=(test_images,test_labels))
+   """
