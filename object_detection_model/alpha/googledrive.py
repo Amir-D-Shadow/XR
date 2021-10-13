@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
    path = os.getcwd()
 
-   input_path = f"{os.getcwd()}/annotations/test_annotations.csv"
+   input_path = f"{os.getcwd()}/annotations/test100_annotations.csv"
    save_path = f"{os.getcwd()}/data"
    
    gt_dataset = preprocess_data.preprocessing_label(input_path,save_path)
