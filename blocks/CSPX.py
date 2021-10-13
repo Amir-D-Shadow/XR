@@ -20,7 +20,7 @@ class CSPX(tf.keras.Model):
       ------ CBL_1 ------ CBL_2 ------ res_unit * X ------ CBL_3 -----
                      |                                               |
                      |                                               |______
-                     |                                                ______  Concat --- BN --- leaky relu --- CBM_1 
+                     |                                                ______  Concat --- CBL_5
                      |                                               |
                      |                                               |
                      -------------------------------- CBL_4 ----------
@@ -67,17 +67,10 @@ class CSPX(tf.keras.Model):
       
       self.CBL_4 = CBL(filters,kernel_size,strides,padding)
 
-      #BN
-      self.BN_x = tf.keras.layers.BatchNormalization(axis=-1)
+      #CBL_5
+      filters,kernel_size,strides,padding = CSPX_info["CBL_5"]
 
-      #leaky relu
-      self.leaky_relu_x = tf.keras.layers.LeakyReLU()
-
-      #CBM_1
-      filters,kernel_size,strides,padding = CSPX_info["CBM_1"]
-
-      self.CBM_1 = CBM(filters,kernel_size,strides,padding)
-      
+      self.CBL_5 = CBL(filters,kernel_size,strides,padding)
 
    def call(self,inputs,train_flag=True):
 
@@ -109,16 +102,10 @@ class CSPX(tf.keras.Model):
       #Concat
       mid_concat = tf.keras.layers.concatenate(inputs=[CBL_3,CBL_4],axis=-1)
 
-      #Batch Normalization
-      BN_x = self.BN_x(mid_concat,training=train_flag)
+      #CBL5
+      CBL_5 = self.CBL_5(mid_concat,train_flag)
 
-      #leaky_relu_x
-      leaky_relu_x = self.leaky_relu_x(BN_x)
-
-      #output_CBM
-      output_CBM = self.CBM_1(leaky_relu_x,train_flag)
-
-      return output_CBM
+      return CBL_5
       
 
 

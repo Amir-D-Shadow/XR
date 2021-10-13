@@ -286,3 +286,15 @@ if __name__ == "__main__":
 
    history_FA0 = model.fit(train_images,train_labels,epochs=10,batch_size=64,validation_data=(test_images,test_labels))
    """
+
+   q = tf.constant(np.random.randn(10,16,16,64))
+
+   k = tf.constant(np.random.randn(10,3,3,64))
+
+   v = tf.constant(np.random.randn(10,3,3,64))
+
+   d = tf.einsum("bijk,bpqk->bijpq",q,k)
+
+   f = tf.einsum("bijpq,bpqk->bijk",d,v)
+
+

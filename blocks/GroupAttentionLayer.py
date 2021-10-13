@@ -10,7 +10,7 @@ class GroupAttentionLayer(tf.keras.layers.Layer):
 
       """
 
-      chain_info -- dictionary containing information: CBL_Q ,CBL_O,DSC
+      chain_info -- dictionary containing information: CBL_Q ,CBL_K,CBL_V,receptive_field,sim_strides
 
                   
       Module Graph:
@@ -18,9 +18,9 @@ class GroupAttentionLayer(tf.keras.layers.Layer):
                       _________ CBL_Q ____                  
                      |                    |                 
                      |                    |                 
-      inputs ----------                     ---------  similarity process ------------ TCBL_out
+      inputs ------------------CBL_K -------------  similarity process 
                      |                    |
-                     |_________ CBL_K ____|
+                     |_________ CBL_V ____|
 
       """
 
@@ -37,16 +37,19 @@ class GroupAttentionLayer(tf.keras.layers.Layer):
 
       self.CBL_K = CBL(filters,kernel_size,strides,padding)
 
-      #BN
+      #CBL_V
+      filters,kernel_size,strides,padding = ga_info["CBL_V"]
+
+      self.CBL_V = CBL(filters,kernel_size,strides,padding)
+
+      #BN1
       self.BN1 = tf.keras.layers.BatchNormalization(axis=-1)
 
-      #act
-      self.act1 = tf.keras.layers.LeakyReLU()
+      #LR_act
+      self.act_LR = tf.keras.layers.LeakyReLU()
 
-      #CBL_out
-      filters,kernel_size,strides,padding = ga_info["TCBL_out"]
-
-      self.TCBL_out = TCBL(filters,kernel_size,strides,padding)
+      #softmax
+      self.act_softmax = tf.keras.layers.Softmax(axis=(1,2))
 
       #similarity info
       self.sim_RF = ga_info["receptive_field"] # height width determined by same size
@@ -61,34 +64,39 @@ class GroupAttentionLayer(tf.keras.layers.Layer):
       nH = int((H - self.sim_RF)/self.sim_strides) + 1
       nW = int((W - self.sim_RF)/self.sim_strides) + 1
 
-      self.beta_bias =  tf.Variable(name="beta_bias",initial_value=tf.random_normal_initializer()(shape=(1,1,1,nH*nW),dtype="float64"),trainable=True)      
+      #self.beta_bias =  tf.Variable(name="beta_bias",initial_value=tf.random_normal_initializer()(shape=(1,1,1,nH*nW),dtype="float64"),trainable=True)      
       
    def call(self,inputs,train_flag=True):
 
-      """
-      inputs : (m,h,w,c)
-      """
 
-      #CBL_Q
+      #CBL_Q : (m,h,w,c)
       CBL_Q = self.CBL_Q(inputs,train_flag)
       CBL_Q = tf.cast(CBL_Q,tf.float64)
 
-      #CBL_K
+      #CBL_K : (m,h,w,c)
       CBL_K = self.CBL_K(inputs,train_flag)
       CBL_K = tf.cast(CBL_K,tf.float64)
 
+      #CBL_V : (m,h,w,c)
+      CBL_V = self.CBL_V(inputs,train_flag)
+      CBL_V = tf.cast(CBL_V,tf.float64)
+
       #$#$#$#$#$#$#$#$#$$## similarity process $#$$#$#$#$#$#$#$#$$#$#$
 
-      H,W,C = CBL_Q.shape[1],CBL_Q.shape[2],CBL_Q.shape[3]
+      H = CBL_Q.shape[1]
+      W = CBL_Q.shape[2]
+      C = CBL_Q.shape[3]
+
 
       nH = int((H - self.sim_RF)/self.sim_strides) + 1
       nW = int((W - self.sim_RF)/self.sim_strides) + 1
 
-      sim_out = tf.TensorArray(tf.float64,size=1,dynamic_size=True)
+      yout = 0.0
+      yout = tf.cast(yout,tf.float64)
 
-      C_out = 0
-
-      #conv over CBL_Q from CBL_K tensors
+      C = tf.cast(C,tf.float64)
+      
+      #similarity process
       for h in range(nH):
 
          h_start_f = h * self.sim_strides
@@ -99,65 +107,28 @@ class GroupAttentionLayer(tf.keras.layers.Layer):
             w_start_f = w * self.sim_strides
             w_end_f = w_start_f + self.sim_RF
 
-            #h_start_f , w_start_f , h_end_f , w_end_f :filter perspective
+            #dot similiarity feat_block :  (m,h,w,f,f)
+            feat_block = tf.einsum("bijk,bpqk->bijpq",CBL_Q,CBL_K[:,h_start_f:h_end_f,w_start_f:w_end_f,:])
 
-            #create feat_vec to store attention result of a group of feat vec
-            #expected shape in output : (m,nH * nW) 
-            feat_vec = tf.TensorArray(tf.float64,size=1,dynamic_size = True)
+            #normalize feat_block :  (m,h,w,f,f)
+            feat_block = feat_block / tf.math.sqrt(C)
 
-            nc = 0
+            #activate feat_block :  (m,h,w,f,f)
+            feat_block = self.act_LR(feat_block)
+            feat_block = tf.cast(feat_block,tf.float64)
 
-            #loop via CBL_Q
-            for hq in range(nH):
+            #dot with value : (m,h,w,c)
+            feat_block = tf.einsum("bijpq,bpqk->bijk",feat_block,CBL_V[:,h_start_f:h_end_f,w_start_f:w_end_f,:])
 
-               h_start_q = hq * self.sim_strides
-               h_end_q = h_start_q + self.sim_RF
+            #add the dot similarity effect
+            yout = yout + feat_block
 
-               for wq in range(nW):
 
-                  w_start_q = wq * self.sim_strides
-                  w_end_q = w_start_q + self.sim_RF
+      #normalize
+      yout = self.BN1(yout,training=train_flag) 
 
-                  #dot product similarity
-                  res = CBL_Q[:,h_start_q:h_end_q,w_start_q:w_end_q,:] * CBL_K[:,h_start_f:h_end_f,w_start_f:w_end_f,:]
-            
-                  res = tf.math.reduce_sum(res,axis=(1,2,3))
+      #act softmax
+      yout = self.act_softmax(yout)
 
-                  feat_vec = feat_vec.write(nc,res)
-
-                  #update nc
-                  nc = nc + 1
-
-            #feat_vec : (nH*nW,m)
-            feat_vec = feat_vec.stack()
-
-            #feat_vec reshape : (m,nH*nW)
-            feat_vec = tf.transpose( feat_vec , perm = [1,0])
-
-            #save result
-            sim_out = sim_out.write(C_out,feat_vec)
-
-            #update C_out
-            C_out = C_out + 1
-
-      #sim_out : (nH * nW ,m ,nH * nW)
-      sim_out = sim_out.stack()
-
-      #sim_out : (m,n_H*n_W,n_H*n_W)
-      sim_out = tf.transpose(sim_out , perm=(1,0,2))
-
-      #sim_out : (m,n_H,n_W,n_H*n_W)
-      sim_out = tf.reshape(sim_out , shape = (-1,nH,nW,nH*nW))
-                  
-      #$#$#$#$#$#$#$#$#$$## similarity process $#$$#$#$#$#$#$#$#$$#$#$
-
-      sim_out = sim_out + self.beta_bias
-
-      BN1 = self.BN1(sim_out,train_flag)
-
-      act1 = self.act1(BN1)
-
-      TCBL_out = self.TCBL_out(act1,train_flag)
-
-      return TCBL_out
+      return yout
       
