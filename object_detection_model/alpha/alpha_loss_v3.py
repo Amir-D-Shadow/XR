@@ -4,7 +4,6 @@ import numpy  as np
 from matplotlib import pyplot as plt
 from AttentionModule_lambda_version import AttentionModule
 from Fourier_Attention_Module import FourierAttentionModule
-import tensorflow_addons as tfa
 
 class alpha_loss(tf.keras.losses.Loss):
 
@@ -54,33 +53,16 @@ class alpha_loss(tf.keras.losses.Loss):
     #class_pred = K.clip(class_pred,min_value = 0.0, max_value = 1.0)
 
     #prob focal loss
-    loss_tensor_prob =  tf.keras.losses.BinaryCrossentropy(from_logits=False,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(prob_true,prob_pred) #tfa.losses.SigmoidFocalCrossEntropy(from_logits=False,alpha=0.25,gamma=self.gamma,reduction=tf.keras.losses.Reduction.NONE)(prob_true,prob_pred) 
-    loss_tensor_prob = loss_tensor_prob[:,:,:,tf.newaxis]
-
-    pos_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * object_mask[:,:,:,:]
-    neg_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * (1 - object_mask[:,:,:,:]) * ignore_mask[:,:,:,:] 
+    loss_tensor_prob =  - ( (1 - prob_pred[:,:,:,:])**self.gamma ) * prob_true[:,:,:,:] * tf.math.log( prob_pred[:,:,:,:] + 1e-18 ) - ( prob_pred[:,:,:,:] ** self.gamma ) * ( 1 - prob_true[:,:,:,:] ) * tf.math.log( 1 - prob_pred[:,:,:,:] + 1e-18 )
     
-    prob_focal_loss = tf.math.reduce_sum( pos_loss_tensor_prob )/m + tf.math.reduce_sum( neg_loss_tensor_prob )/ m
+    pos_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * object_mask[:,:,:,:]
+    neg_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * (1 - object_mask[:,:,:,:]) * ignore_mask[:,:,:,:]
+    
+    prob_focal_loss = K.sum( (pos_loss_tensor_prob[:,:,:,:] + neg_loss_tensor_prob[:,:,:,:]) )/ m
 
     #class focal loss
-    loss_tensor_class =  tf.keras.losses.CategoricalCrossentropy(from_logits=False,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(class_true,class_pred) #tfa.losses.SigmoidFocalCrossEntropy(from_logits=False,alpha=0.25,gamma=self.gamma,reduction=tf.keras.losses.Reduction.NONE)(class_true,class_pred) #- ( (1 - class_pred[:,:,:,:])**self.gamma ) * class_true[:,:,:,:] * tf.math.log( class_pred[:,:,:,:] + 1e-18 ) - ( class_pred[:,:,:,:] ** self.gamma) * ( 1 - class_true[:,:,:,:] ) * tf.math.log( 1 - class_pred[:,:,:,:] + 1e-18 )
-    loss_tensor_class = loss_tensor_class[:,:,:,tf.newaxis]
-
+    loss_tensor_class =  - ( (1 - class_pred[:,:,:,:])**self.gamma ) * class_true[:,:,:,:] * tf.math.log( class_pred[:,:,:,:] + 1e-18 ) - ( class_pred[:,:,:,:] ** self.gamma) * ( 1 - class_true[:,:,:,:] ) * tf.math.log( 1 - class_pred[:,:,:,:] + 1e-18 )
     class_focal_loss = K.sum(loss_tensor_class[:,:,:,:]*object_mask[:,:,:,:]) / m
-
-    #prob loss distance
-    loss_tensor_prob_dis = (prob_true - prob_pred) ** 2
-    
-    pos_loss_tensor_prob_dis = loss_tensor_prob_dis * object_mask
-    neg_loss_tensor_prob_dis = loss_tensor_prob_dis * ignore_mask * (1 - object_mask) 
-
-    prob_dis_loss = tf.math.reduce_sum(pos_loss_tensor_prob_dis)/m + tf.math.reduce_sum(neg_loss_tensor_prob_dis)/m
-
-    #class loss distance
-    loss_tensor_cls_dis = (class_true - class_pred) ** 2
-    loss_tensor_cls_dis = loss_tensor_cls_dis * object_mask
-
-    cls_dis_loss = tf.math.reduce_sum(loss_tensor_cls_dis)/m
 
 
     #****************** Focal loss ******************
@@ -201,10 +183,10 @@ class alpha_loss(tf.keras.losses.Loss):
     #****************** Loc loss ******************
 
     #calculate reg loss
-    reg_loss = prob_dis_loss + loc_loss + iou_loss + box_scale_entropy_loss
+    reg_loss = loc_loss + iou_loss + box_scale_entropy_loss
  
     #calculate loss
-    loss = cls_dis_loss + prob_dis_loss + prob_focal_loss +  class_focal_loss + reg_loss
+    loss = prob_focal_loss + class_focal_loss + reg_loss
  
     return loss
 

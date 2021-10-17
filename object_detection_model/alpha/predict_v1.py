@@ -8,23 +8,19 @@ import json
 import cv2
 import os
 import time
-import alpha
 
 
 @tf.function
 def step_predict(img,model):
 
-   predictions = model(img,train_flag=False,training=False)
+   predictions = model(img,training=False)
 
    return predictions
 
 def load_model(model_path):
 
    #define model
-   #model = tf.keras.models.load_model(model_path)
-   model = alpha_model()
-   #model.load_weights(f"{cur_path}/gdrive/MyDrive/model_weights")
-   model.load_weights(model_path)
+   model = tf.keras.models.load_model(model_path)
 
    return model
 
@@ -50,7 +46,7 @@ def get_image_generator(batch_size,image_path,standard_shape=(640,640)):
          img = cv2.imread(f"{image_path}/{name}").astype(np.float64)
 
          #pad image
-         img = preprocess_image(img,standard_shape)
+         img = preprocess_data.preprocess_image(img,standard_shape)
 
          #save img
          img_data.append(img)
@@ -78,26 +74,20 @@ def predict(model,image_path,result_path,reversed_class_map,class_color_map,conf
 
          #large object
          large_obj = y[0][i].numpy()
-         large_confirmed_anchor_box = get_confirmed_anchor_box(large_obj,confidence_threshold)
+         
+         selected_object = analyse_feature(large_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
          
          #medium object
          medium_obj = y[1][i].numpy()
-         medium_confirmed_anchor_box = get_confirmed_anchor_box(medium_obj,confidence_threshold)
+         
+         selected_object = analyse_feature(medium_obj,confidence_threshold,diou_threshold)
+         img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
          
          #small object
          small_obj = y[2][i].numpy()
-         small_confirmed_anchor_box = get_confirmed_anchor_box(small_obj,confidence_threshold)
-
-         #final anchor box -- final_anchor_box -- list: [ (prob1,feat_vec1) , (prob2,feat_vec2) , ... ]
-         final_anchor_box = large_confirmed_anchor_box + medium_confirmed_anchor_box + small_confirmed_anchor_box
-
-         #sort in descending order
-         final_anchor_box.sort(key=lambda x:x[0],reverse=True)
-
-         #nms
-         selected_object = non_max_supression(final_anchor_box,diou_threshold)
          
-         #draw prediction
+         selected_object = analyse_feature(small_obj,confidence_threshold,diou_threshold)
          img = draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_map)
 
          #save the result
@@ -116,19 +106,19 @@ def predict(model,image_path,result_path,reversed_class_map,class_color_map,conf
       
    
 
-   with open(f"{os.getcwd()}/gdrive/MyDrive/data/predict_small.txt","w") as file:
+   with open(f"{os.getcwd()}/data/predict_small.txt","w") as file:
 
       file.write(json.dumps((small_obj).tolist()))
 
       file.close()
 
-   with open(f"{os.getcwd()}/gdrive/MyDrive/data/predict_medium.txt","w") as file:
+   with open(f"{os.getcwd()}/data/predict_medium.txt","w") as file:
 
       file.write(json.dumps((medium_obj).tolist()))
 
       file.close()
 
-   with open(f"{os.getcwd()}/gdrive/MyDrive/data/predict_large.txt","w") as file:
+   with open(f"{os.getcwd()}/data/predict_large.txt","w") as file:
 
       file.write(json.dumps((large_obj).tolist()))
 
@@ -140,13 +130,13 @@ def draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_ma
 
    for obj in selected_object:
 
-      class_idx = np.argmax(obj[1][5:])
+      class_idx = np.argmax(obj[5:])
 
       #set feat
-      feat = [class_idx,obj[1][1],obj[1][2],obj[1][3],obj[1][4],obj[0],obj[-1]]
+      feat = [class_idx,obj[1],obj[2],obj[3],obj[4]]
 
       #draw box
-      img = draw_anchor_box(img,feat,reversed_class_map,class_color_map)
+      img = draw.draw_anchor_box(img,feat,reversed_class_map,class_color_map)
 
 
    return img
@@ -180,17 +170,15 @@ def get_confirmed_anchor_box(feat,confidence_threshold=0.8):
 
       for w in range(nW):
 
-         #feat_vec : (c,)
          feat_vec = feat[h,w,:].copy()
          
          class_idx = np.argmax(feat_vec[5:])
          
-         prob = feat_vec[0]#feat_vec[5+class_idx] * feat_vec[0]
+         prob = feat_vec[5+class_idx] * feat_vec[0]
 
          if prob >= confidence_threshold:
 
-            #confirmed_anchor_box.append((prob,feat_vec))
-            confirmed_anchor_box.append((prob,feat_vec,feat_vec[0]))
+            confirmed_anchor_box.append((prob,feat_vec))
 
    return confirmed_anchor_box
 
@@ -206,11 +194,9 @@ def non_max_supression(confirmed_anchor_box,diou_threshold=0.4):
 
    while m != 0:
 
-      #get and save largest fect_vec -- feat_vec: numpy.array (c,)
+      #get and save largest fect_vec -- feat_vec: numpy.array
       feat_vec = confirmed_anchor_box[0][1]
-      
-      #selected_object.append(feat_vec)
-      selected_object.append((confirmed_anchor_box[0][0],feat_vec,confirmed_anchor_box[0][-1]))
+      selected_object.append(feat_vec)
 
       #pop it from confirmed_anchor_box
       confirmed_anchor_box.pop(0)
@@ -291,30 +277,34 @@ def DIOU(feat_1,feat_2):
 
 if __name__ == "__main__":
    
-   import time
+   """
+   test_obj = np.random.randn(40,40,85)
+   selected_obj = analyse_feature(test_obj)
+   """
+   
    path = os.getcwd()
 
-   data_path =  f"{path}/gdrive/MyDrive/data"
+   data_path = f"{path}/data"
 
    #get class info
    file = open(f"{data_path}/class_map.txt")
    class_info = json.load(file)
    file.close()
+   
+   class_color_map = preprocess_data.preprocess_class_color_map(class_info,data_path)
+   reversed_class_info = preprocess_data.reverse_class_info(class_info,data_path)
+   
 
-   class_color_map = preprocess_class_color_map(class_info,data_path)
-   reversed_class_info = reverse_class_info(class_info,data_path)
-
-
-   model_path = f"{path}/gdrive/MyDrive/model_weights"
-   image_path = f"{path}/gdrive/MyDrive/pending_to_analysis"
-   result_path = f"{path}/gdrive/MyDrive/result"
+   model_path = f"{path}/model"
+   image_path = f"{path}/pending_to_analysis"
+   result_path = f"{path}/result"
 
    model = load_model(model_path)
 
    start = time.time()
-   for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.25,diou_threshold=0.4,batch_size=4):
+   for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.7,diou_threshold=0.4,batch_size=1):
 
-     print(f"FPS: {1/(time.time()-start)}")
-     start = time.time()
-    
+      print(f"FPS: {1/(time.time()-start)}")
+      start = time.time()
+ 
 
