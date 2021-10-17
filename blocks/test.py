@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
    history_FA0 = model.fit(train_images,train_labels,epochs=10,batch_size=64,validation_data=(test_images,test_labels))
    """
-
+   """
    q = tf.constant(np.random.randn(10,16,16,64))
 
    k = tf.constant(np.random.randn(10,3,3,64))
@@ -297,4 +297,16 @@ if __name__ == "__main__":
 
    f = tf.einsum("bijpq,bpqk->bijk",d,v)
 
+   y_true = tf.constant(np.random.randn(10,16,16,20))
+   y_pred = tf.constant(np.random.randn(10,16,16,20))
 
+   #losses = tf.keras.losses.BinaryCrossentropy(from_logits=True,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(y_true,y_pred)
+   #import tensorflow_addons as tfa
+   #losses =  tfa.losses.SigmoidFocalCrossEntropy(from_logits=True,alpha=1,gamma=2,reduction=tf.keras.losses.Reduction.NONE)(y_true,y_pred)
+
+   losses  = tf.keras.losses.CategoricalCrossentropy(from_logits=True,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(y_true,y_pred)
+   """
+
+   a = tf.constant(np.random.randn(10,3,3,20))
+
+   b = tf.keras.layers.Dense(64)(a)
