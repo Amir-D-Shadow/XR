@@ -53,8 +53,9 @@ class alpha_loss(tf.keras.losses.Loss):
     #prob_pred = K.clip(prob_pred,min_value = 0.0, max_value = 1.0)
     #class_pred = K.clip(class_pred,min_value = 0.0, max_value = 1.0)
 
+
     #prob focal loss
-    loss_tensor_prob =  tf.keras.losses.BinaryCrossentropy(from_logits=False,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(prob_true,prob_pred) #tfa.losses.SigmoidFocalCrossEntropy(from_logits=False,alpha=0.25,gamma=self.gamma,reduction=tf.keras.losses.Reduction.NONE)(prob_true,prob_pred) 
+    loss_tensor_prob =  tfa.losses.SigmoidFocalCrossEntropy(from_logits=False,alpha=0.9,gamma=self.gamma,reduction=tf.keras.losses.Reduction.NONE)(prob_true,prob_pred)  #tf.keras.losses.BinaryCrossentropy(from_logits=False,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(prob_true,prob_pred) 
     loss_tensor_prob = loss_tensor_prob[:,:,:,tf.newaxis]
 
     pos_loss_tensor_prob = loss_tensor_prob[:,:,:,:] * object_mask[:,:,:,:]
@@ -63,11 +64,12 @@ class alpha_loss(tf.keras.losses.Loss):
     prob_focal_loss = tf.math.reduce_sum( pos_loss_tensor_prob )/m + tf.math.reduce_sum( neg_loss_tensor_prob )/ m
 
     #class focal loss
-    loss_tensor_class =  tf.keras.losses.CategoricalCrossentropy(from_logits=False,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(class_true,class_pred) #tfa.losses.SigmoidFocalCrossEntropy(from_logits=False,alpha=0.25,gamma=self.gamma,reduction=tf.keras.losses.Reduction.NONE)(class_true,class_pred) #- ( (1 - class_pred[:,:,:,:])**self.gamma ) * class_true[:,:,:,:] * tf.math.log( class_pred[:,:,:,:] + 1e-18 ) - ( class_pred[:,:,:,:] ** self.gamma) * ( 1 - class_true[:,:,:,:] ) * tf.math.log( 1 - class_pred[:,:,:,:] + 1e-18 )
+    loss_tensor_class =  tfa.losses.SigmoidFocalCrossEntropy(from_logits=False,alpha=0.5,gamma=self.gamma,reduction=tf.keras.losses.Reduction.NONE)(class_true,class_pred) #tf.keras.losses.CategoricalCrossentropy(from_logits=False,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(class_true,class_pred)  #- ( (1 - class_pred[:,:,:,:])**self.gamma ) * class_true[:,:,:,:] * tf.math.log( class_pred[:,:,:,:] + 1e-18 ) - ( class_pred[:,:,:,:] ** self.gamma) * ( 1 - class_true[:,:,:,:] ) * tf.math.log( 1 - class_pred[:,:,:,:] + 1e-18 )
     loss_tensor_class = loss_tensor_class[:,:,:,tf.newaxis]
 
     class_focal_loss = K.sum(loss_tensor_class[:,:,:,:]*object_mask[:,:,:,:]) / m
 
+    """
     #prob loss distance
     loss_tensor_prob_dis = (prob_true - prob_pred) ** 2
     
@@ -81,8 +83,8 @@ class alpha_loss(tf.keras.losses.Loss):
     loss_tensor_cls_dis = loss_tensor_cls_dis * object_mask
 
     cls_dis_loss = tf.math.reduce_sum(loss_tensor_cls_dis)/m
-
-
+    """
+    
     #****************** Focal loss ******************
 
     #get reg left -- (x,y)
@@ -113,7 +115,6 @@ class alpha_loss(tf.keras.losses.Loss):
     reg_height_true = reg_wh_true[:,:,:,1:2]
     reg_height_pred = reg_wh_pred[:,:,:,1:2]
 
-    
     #****************** Box Scale Entropy ******************
     
     #calculate mini width
@@ -155,6 +156,7 @@ class alpha_loss(tf.keras.losses.Loss):
     
 
     #****************** Box Scale Entropy ******************
+
     
     #****************** IOU loss ******************
     
@@ -201,10 +203,10 @@ class alpha_loss(tf.keras.losses.Loss):
     #****************** Loc loss ******************
 
     #calculate reg loss
-    reg_loss = prob_dis_loss + loc_loss + iou_loss + box_scale_entropy_loss
+    reg_loss = loc_loss + iou_loss + box_scale_entropy_loss
  
     #calculate loss
-    loss = cls_dis_loss + prob_dis_loss + prob_focal_loss +  class_focal_loss + reg_loss
+    loss =  prob_focal_loss +  class_focal_loss + reg_loss # + cls_dis_loss + prob_dis_loss 
  
     return loss
 
@@ -277,7 +279,7 @@ def get_ignore_mask(ignore_mask,y_true,y_pred,object_mask_bool,ignore_threshold 
     batch_union_area = (batch_true_union_area + batch_pred_union_area) - batch_intersection_area
 
     #calculate iou -- (h,w,n)
-    batch_iou = batch_intersection_area / (batch_union_area + 1e-10)
+    batch_iou = batch_intersection_area / ( batch_union_area + 1e-10)
 
     #****************** IOU ******************
 

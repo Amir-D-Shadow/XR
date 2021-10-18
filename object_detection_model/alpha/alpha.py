@@ -223,10 +223,10 @@ class alpha_model(tf.keras.Model):
       self.CBL_prob_class_small_2 = CBL(256,1,1,"same")
 
       #conv_prob_small in : 80 x 80 x 256 out : 80 x 80 x 1
-      self.conv_prob_small = tf.keras.layers.Conv2D(filters=1,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+      self.conv_prob_small = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
 
       #conv_class_small in : 80 x 80 x 256 out : 80 x 80 x 20
-      self.conv_class_small = tf.keras.layers.Conv2D(filters=20,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+      self.conv_class_small = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
       
       #Reg info
       
@@ -237,7 +237,7 @@ class alpha_model(tf.keras.Model):
       self.CBL_left_center_small_2 = CBL(256,1,1,"same")
 
       #conv_pos_info_small in : 80 x 80 x 256 out : 80 x 80 x 4
-      self.conv_pos_info_small = tf.keras.layers.Conv2D(filters=4,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+      self.conv_pos_info_small = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
 
       #concat conv_prob_small -- conv_pos_info_small -- conv_class_small , out: 80 x 80 x 25
 
@@ -279,10 +279,10 @@ class alpha_model(tf.keras.Model):
       self.CBL_prob_class_medium_2 = CBL(512,1,1,"same")
 
       #conv_prob_medium in : 40 x 40 x 512 out : 40 x 40 x 1
-      self.conv_prob_medium = tf.keras.layers.Conv2D(filters=1,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+      self.conv_prob_medium = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
 
       #conv_class_medium in : 40 x 40 x 512 out : 40 x 40 x 20
-      self.conv_class_medium = tf.keras.layers.Conv2D(filters=20,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+      self.conv_class_medium = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
 
 
       #Reg info
@@ -337,10 +337,10 @@ class alpha_model(tf.keras.Model):
       self.CBL_prob_class_large_2 = CBL(1024,1,1,"same")
 
       #conv_prob_large in : 20 x 20 x 1024 out : 20 x 20 x 1
-      self.conv_prob_large = tf.keras.layers.Conv2D(filters=1,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+      self.conv_prob_large = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
 
       #conv_class_large in : 20 x 20 x 1024 out : 20 x 20 x 20
-      self.conv_class_large = tf.keras.layers.Conv2D(filters=20,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+      self.conv_class_large = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
 
 
       #Reg info
@@ -352,7 +352,7 @@ class alpha_model(tf.keras.Model):
       self.CBL_left_center_large_2 = CBL(1024,1,1,"same")
 
       #conv_pos_info_large in : 20 x 20 x 1024 out : 20 x 20 x 4
-      self.conv_pos_info_large = tf.keras.layers.Conv2D(filters=4,kernel_size=3,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+      self.conv_pos_info_large = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
 
       #concat conv_prob_large -- conv_pos_info_large -- conv_class_large , out: 20 x 20 x 25
 
