@@ -78,6 +78,7 @@ class alpha_model(tf.keras.Model):
       #CSPX_2
       self.CSPX_2 = CSPX(CSP_info)
 
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CSPX_1 in : 159 x 159 x 128  out : 79 x 79 x 256 -- branch 1
@@ -137,6 +138,7 @@ class alpha_model(tf.keras.Model):
       #CSPX_8_1 -- branch_1
       self.CSPX_8_branch_1 = CSPX(CSP_info)
 
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CSPX_8_2 in : 79 x 79 x 256 out : 39 x 39 x 512 --- branch_2
@@ -195,6 +197,7 @@ class alpha_model(tf.keras.Model):
       
       #CSPX_8_2 -- branch_2
       self.CSPX_8_branch_2 = CSPX(CSP_info)
+      
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
@@ -235,42 +238,40 @@ class alpha_model(tf.keras.Model):
       #CSPX_4 
       self.CSPX_4 = CSPX(CSP_info)
 
+      #Upscale to 20 x 20 x 1024
+      self.TCBL_CSPX4 = TCBL(1024,2,1,"valid")
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      #CBL_1 neck in : 19 x 19 x 1024 out : 19 x 19 x 512
+      #CBL_1 neck in : 20 x 20 x 1024 out : 20 x 20 x 512
       self.CBL_1_neck = CBL(512,3,1,"same")
 
-      #CBL_2 neck in : 19 x 19 x 512 out : 19 x 19 x 1024
+      #CBL_2 neck in : 20 x 20 x 512 out : 20 x 20 x 1024
       self.CBL_2_neck = CBL(1024,1,1,"same")
 
-      #CBL_3 neck in : 19 x 19 x 1024 out : 19 x 19 x 512
+      #CBL_3 neck in : 20 x 20 x 1024 out : 20 x 20 x 512
       self.CBL_3_neck = CBL(512,3,1,"same")
 
-      #SPP_neck in:19 x 19 x 512 out: 19 x 19 x 2048
+      #SPP_neck in:20 x 20 x 512 out: 20 x 20 x 2048
       self.SPP_neck = SPP()
 
-      #CBL_4 neck in : 19 x 19 x 2048 out : 19 x 19 x 512
+      #CBL_4 neck in : 20 x 20 x 2048 out : 20 x 20 x 512
       self.CBL_4_neck = CBL(512,3,1,"same")
 
-      #CBL_5 neck in : 19 x 19 x 512 out : 19 x 19 x 1024
+      #CBL_5 neck in : 20 x 20 x 512 out : 20 x 20 x 1024
       self.CBL_5_neck = CBL(1024,1,1,"same")
 
-      #CBL_6 branch 3 in : 19 x 19 x 1024 out : 19 x 19 x 512 -- branch 3
+      #CBL_6 branch 3 in : 20 x 20 x 1024 out : 20 x 20 x 512 -- branch 3
       self.CBL_6_branch_3 = CBL(512,3,1,"same")
-
-      #TCBL_connect_branch_3 in : 19 x 19 x 512 out : 20 x 20 x 512
-      self.TCBL_connect_branch_3 = TCBL(512,2,1,"valid")
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
       
-      #CBL 7 neck in : 19 x 19 x 512 out : 19 x 19 x 512
+      #CBL 7 neck in : 20 x 20 x 512 out : 20 x 20 x 512
       self.CBL_7_neck = CBL(512,1,1,"same")
 
-      #TCBL1,2,3,4,5,6,7,8,9,10 in : 19 x 19 x 256 out: 40 x 40 x 256
+      #TCBL1,2,3,4,5,6,7,8,9,10 in : 20 x 20 x 256 out: 40 x 40 x 256
       self.TCBL1 = TCBL(256,3,1,"valid")
-
-      self.TCBL2 = TCBL(256,8,1,"valid")
-
+      self.TCBL2 = TCBL(256,7,1,"valid")
       self.TCBL10 = TCBL(256,13,1,"valid")
 
       #TCBL_connect_branch_2 in : 39 x 39 x 512 out: 40 x 40 x 256
@@ -300,11 +301,9 @@ class alpha_model(tf.keras.Model):
       #CBL_6 phase1 in : 40 x 40 x 256 out : 40 x 40 x 256
       self.CBL_6_phase1 = CBL(256,1,1,"same")
 
-      #TCBL2 in : 40 x 40 x 128 out: 80 x 80 x 256
+      #TCBL2 in : 40 x 40 x 128 out: 80 x 80 x 128
       self.TCBL1a = TCBL(128,7,1,"valid")
-
       self.TCBL2a = TCBL(128,13,1,"valid")
-
       self.TCBL20a = TCBL(128,23,1,"valid")
 
       #TCBL_connect_branch_1 in : 79 x 79 x 256 out: 80 x 80 x 128
@@ -330,6 +329,75 @@ class alpha_model(tf.keras.Model):
       self.CBL_5_phase2_branch_5 = CBL(128,3,1,"same")
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$# small output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
+
+      #-------- 0.8 --------- #
+      
+      #CBL_small_0.8 
+      self.CBL_small_08 = CBL(1024,1,1,"same")
+
+      #prob info 0.8
+
+      #CBL_prob_class_small_1 
+      self.CBL_prob_class_small_1_08 = CBL(512,3,1,"same")
+
+      #CBL_prob_class_small_2 
+      self.CBL_prob_class_small_2_08 = CBL(1024,1,1,"same")
+
+      #conv_prob_small 
+      self.conv_prob_small_08 = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+
+      #conv_class_small 
+      self.conv_class_small_08 = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+
+
+      #Reg info 0.8
+      
+      #CBL_left_center_small_1_08 
+      self.CBL_left_center_small_1_08 = CBL(512,3,1,"same")
+
+      #CBL_left_center_small_2_08 
+      self.CBL_left_center_small_2_08 = CBL(1024,1,1,"same")
+
+      #conv_pos_info_small_08 
+      self.conv_pos_info_small_08 = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+
+
+      #-------- 0.8 --------- #
+
+      #-------- 0.3 --------- #
+
+      #CBL_small_0.3 
+      self.CBL_small_03 = CBL(1024,1,1,"same")
+
+      #prob info 0.3
+
+      #CBL_prob_class_small_1 
+      self.CBL_prob_class_small_1_03 = CBL(512,3,1,"same")
+
+      #CBL_prob_class_small_2 
+      self.CBL_prob_class_small_2_03 = CBL(1024,1,1,"same")
+
+      #conv_prob_small 
+      self.conv_prob_small_03 = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+
+      #conv_class_small 
+      self.conv_class_small_03 = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+
+
+      #Reg info 0.3
+      
+      #CBL_left_center_small_1_03 
+      self.CBL_left_center_small_1_03 = CBL(512,3,1,"same")
+
+      #CBL_left_center_small_2_03 
+      self.CBL_left_center_small_2_03 = CBL(1024,1,1,"same")
+
+      #conv_pos_info_small_03 
+      self.conv_pos_info_small_03 = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+
+      #-------- 0.3 --------- #
+
+      #-------- 1.0 --------- #
 
       #CBL_small in : 80 x 80 x 128 out : 80 x 80 x 256
       self.CBL_small = CBL(256,1,1,"same")
@@ -361,6 +429,8 @@ class alpha_model(tf.keras.Model):
 
       #concat conv_prob_small -- conv_pos_info_small -- conv_class_small , out: 80 x 80 x 25
 
+      #-------- 1.0 --------- #
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$# small output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CBL_connect_branch_5 in : 80 x 80 x 128 out : 40 x 40 x 256
@@ -387,6 +457,74 @@ class alpha_model(tf.keras.Model):
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$# medium output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
+      #-------- 0.8 --------- #
+      
+      #CBL_medium_0.8 
+      self.CBL_medium_08 = CBL(1024,1,1,"same")
+
+      #prob info 0.8
+
+      #CBL_prob_class_medium_1 
+      self.CBL_prob_class_medium_1_08 = CBL(512,3,1,"same")
+
+      #CBL_prob_class_medium_2 
+      self.CBL_prob_class_medium_2_08 = CBL(1024,1,1,"same")
+
+      #conv_prob_medium 
+      self.conv_prob_medium_08 = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+
+      #conv_class_medium 
+      self.conv_class_medium_08 = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+
+
+      #Reg info 0.8
+      
+      #CBL_left_center_medium_1_08 
+      self.CBL_left_center_medium_1_08 = CBL(512,3,1,"same")
+
+      #CBL_left_center_medium_2_08 
+      self.CBL_left_center_medium_2_08 = CBL(1024,1,1,"same")
+
+      #conv_pos_info_medium_08 
+      self.conv_pos_info_medium_08 = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+
+
+      #-------- 0.8 --------- #
+
+      #-------- 0.3 --------- #
+
+      #CBL_medium_0.3 
+      self.CBL_medium_03 = CBL(1024,1,1,"same")
+
+      #prob info 0.3
+
+      #CBL_prob_class_medium_1 
+      self.CBL_prob_class_medium_1_03 = CBL(512,3,1,"same")
+
+      #CBL_prob_class_medium_2 
+      self.CBL_prob_class_medium_2_03 = CBL(1024,1,1,"same")
+
+      #conv_prob_medium 
+      self.conv_prob_medium_03 = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+
+      #conv_class_medium 
+      self.conv_class_medium_03 = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+
+
+      #Reg info 0.3
+      
+      #CBL_left_center_medium_1_03 
+      self.CBL_left_center_medium_1_03 = CBL(512,3,1,"same")
+
+      #CBL_left_center_medium_2_03 
+      self.CBL_left_center_medium_2_03 = CBL(1024,1,1,"same")
+
+      #conv_pos_info_medium_03 
+      self.conv_pos_info_medium_03 = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+
+      #-------- 0.3 --------- #
+
+      #-------- 1.0 --------- #
       #CBL_medium in : 40 x 40 x 256 out : 40 x 40 x 512
       self.CBL_medium = CBL(512,1,1,"same")
 
@@ -418,6 +556,8 @@ class alpha_model(tf.keras.Model):
 
       #concat conv_prob_medium -- conv_pos_info_medium -- conv_class_medium , out: 40 x 40 x 25
 
+      #-------- 1.0 --------- #
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$# medium output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CBL_connect_branch_6 in : 40 x 40 x 256 out : 20 x 20 x 512
@@ -445,7 +585,75 @@ class alpha_model(tf.keras.Model):
       
       #$#$#$#$#$#$#$#$#$#$#$#$#$# large output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      self.TCBL_connect_REX4 = TCBL(512,2,1,"valid")
+      #-------- 0.8 --------- #
+      
+      #CBL_large_0.8 in : 20 x 20 x 512 out : 20 x 20 x 1024
+      self.CBL_large_08 = CBL(1024,1,1,"same")
+
+      #prob info 0.8
+
+      #CBL_prob_class_large_1 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      self.CBL_prob_class_large_1_08 = CBL(512,3,1,"same")
+
+      #CBL_prob_class_large_2 in : 20 x 20 x 512 out : 20 x 20 x 1024
+      self.CBL_prob_class_large_2_08 = CBL(1024,1,1,"same")
+
+      #conv_prob_large in : 20 x 20 x 1024 out : 20 x 20 x 1
+      self.conv_prob_large_08 = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+
+      #conv_class_large in : 20 x 20 x 1024 out : 20 x 20 x 20
+      self.conv_class_large_08 = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+
+
+      #Reg info 0.8
+      
+      #CBL_left_center_large_1_08 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      self.CBL_left_center_large_1_08 = CBL(512,3,1,"same")
+
+      #CBL_left_center_large_2_08 in :  20 x 20 x 512 out :  20 x 20 x 1024
+      self.CBL_left_center_large_2_08 = CBL(1024,1,1,"same")
+
+      #conv_pos_info_large_08 in : 20 x 20 x 1024 out : 20 x 20 x 4
+      self.conv_pos_info_large_08 = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+
+
+      #-------- 0.8 --------- #
+
+      #-------- 0.3 --------- #
+
+      #CBL_large_0.3 in : 20 x 20 x 512 out : 20 x 20 x 1024
+      self.CBL_large_03 = CBL(1024,1,1,"same")
+
+      #prob info 0.3
+
+      #CBL_prob_class_large_1 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      self.CBL_prob_class_large_1_03 = CBL(512,3,1,"same")
+
+      #CBL_prob_class_large_2 in : 20 x 20 x 512 out : 20 x 20 x 1024
+      self.CBL_prob_class_large_2_03 = CBL(1024,1,1,"same")
+
+      #conv_prob_large in : 20 x 20 x 1024 out : 20 x 20 x 1
+      self.conv_prob_large_03 = tf.keras.layers.Conv2D(filters=1,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation="sigmoid")
+
+      #conv_class_large in : 20 x 20 x 1024 out : 20 x 20 x 20
+      self.conv_class_large_03 = tf.keras.layers.Conv2D(filters=20,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.Softmax(axis=-1))
+
+
+      #Reg info 0.3
+      
+      #CBL_left_center_large_1_03 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      self.CBL_left_center_large_1_03 = CBL(512,3,1,"same")
+
+      #CBL_left_center_large_2_03 in :  20 x 20 x 512 out :  20 x 20 x 1024
+      self.CBL_left_center_large_2_03 = CBL(1024,1,1,"same")
+
+      #conv_pos_info_large_03 in : 20 x 20 x 1024 out : 20 x 20 x 4
+      self.conv_pos_info_large_03 = tf.keras.layers.Conv2D(filters=4,kernel_size=1,strides=1,padding="same",data_format="channels_last",activation=tf.keras.layers.LeakyReLU())
+
+      #-------- 0.3 --------- #
+
+
+      # -------- 1.0 --------- #
       
       #CBL_large in : 20 x 20 x 512 out : 20 x 20 x 1024
       self.CBL_large = CBL(1024,1,1,"same")
@@ -478,6 +686,8 @@ class alpha_model(tf.keras.Model):
 
       #concat conv_prob_large -- conv_pos_info_large -- conv_class_large , out: 20 x 20 x 25
 
+      # -------- 1.0 --------- #
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$# large output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
       
       
@@ -501,8 +711,11 @@ class alpha_model(tf.keras.Model):
       #CSPX_4
       CSPX_4 = self.CSPX_4(CSPX_8_branch_2,train_flag)
 
+      #upscale CSPX4
+      TCBL_CSPX4 = self.TCBL_CSPX4(CSPX_4,train_flag)
+
       #CBL_1_neck
-      CBL_1_neck = self.CBL_1_neck(CSPX_4,train_flag)
+      CBL_1_neck = self.CBL_1_neck(TCBL_CSPX4,train_flag)
 
       #CBL_2_neck
       CBL_2_neck = self.CBL_2_neck(CBL_1_neck,train_flag)
@@ -522,11 +735,9 @@ class alpha_model(tf.keras.Model):
       #CBL_7_neck
       CBL_7_neck = self.CBL_7_neck(CBL_6_branch_3,train_flag)
 
-      #TCBL1,2,3,4,5,6,7,8,9,10
+      #TCBL10
       TCBL1 = self.TCBL1(CBL_7_neck,train_flag)
-
       TCBL2 = self.TCBL2(TCBL1,train_flag)
-
       TCBL10 = self.TCBL10(TCBL2,train_flag)
 
       #TCBL_connect_branch_2
@@ -553,11 +764,9 @@ class alpha_model(tf.keras.Model):
       #CBL_6_phase1
       CBL_6_phase1 = self.CBL_6_phase1(CBL_5_phase1_branch_4,train_flag)
 
-      #TCBL 1 -20 a
+      #TCBL 20 a
       TCBL1a = self.TCBL1a(CBL_6_phase1,train_flag)
-
       TCBL2a = self.TCBL2a(TCBL1a,train_flag)
-
       TCBL20a = self.TCBL20a(TCBL2a,train_flag)
 
       #TCBL_connect_branch_1
@@ -582,85 +791,84 @@ class alpha_model(tf.keras.Model):
       CBL_5_phase2_branch_5 = self.CBL_5_phase2_branch_5(CBL_4_phase2,train_flag)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$# small output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
+
+      #-------- 0.8 --------- #
+
+      #CBL_small_0.8 
+      CBL_small_08 = self.CBL_small_08(CBL_1_phase2,train_flag)
+
+      #prob info 0.8
+
+      #CBL_prob_class_small_1 
+      CBL_prob_class_small_1_08 = self.CBL_prob_class_small_1_08(CBL_small_08,train_flag)
+
+      #CBL_prob_class_small_2 
+      CBL_prob_class_small_2_08 = self.CBL_prob_class_small_2_08(CBL_prob_class_small_1_08,train_flag)
+
+      #conv_prob_small 
+      conv_prob_small_08 = self.conv_prob_small_08(CBL_prob_class_small_2_08)
+
+      #conv_class_small 
+      conv_class_small_08 = self.conv_class_small_08(CBL_prob_class_small_2_08)
+
+
+      #Reg info 0.8
       
+      #CBL_left_center_small_1_08 
+      CBL_left_center_small_1_08 = self.CBL_left_center_small_1_08(CBL_small_08,train_flag)
 
-      ########################### auxiliary output small 0.8 #################################
+      #CBL_left_center_small_2_08 
+      CBL_left_center_small_2_08 = self.CBL_left_center_small_2_08(CBL_left_center_small_1_08,train_flag)
+
+      #conv_pos_info_small_08 
+      conv_pos_info_small_08 = self.conv_pos_info_small_08(CBL_left_center_small_2_08)
+
+      #concat conv_prob_small -- conv_pos_info_small -- conv_class_small 
+      output_small_08 = tf.keras.layers.concatenate(inputs=[conv_prob_small_08,conv_pos_info_small_08,conv_class_small_08],axis=-1,name="output_small08")
+
+      #-------- 0.8 --------- #
+
+      #-------- 0.3 --------- #
+
+      #CBL_small_0.3 
+      CBL_small_03 = self.CBL_small_03(TCBL_connect_branch_1,train_flag)
+
+      #prob info 0.3
+
+      #CBL_prob_class_small_1 
+      CBL_prob_class_small_1_03 = self.CBL_prob_class_small_1_03(CBL_small_03,train_flag)
+
+      #CBL_prob_class_small_2 
+      CBL_prob_class_small_2_03 = self.CBL_prob_class_small_2_03(CBL_prob_class_small_1_03,train_flag)
+
+      #conv_prob_small 
+      conv_prob_small_03 = self.conv_prob_small_03(CBL_prob_class_small_2_03)
+
+      #conv_class_small 
+      conv_class_small_03 = self.conv_class_small_03(CBL_prob_class_small_2_03)
+
+
+      #Reg info 0.3
       
-      #auxiliary output 0.8
-      CBL_small_08 = self.CBL_small(CBL_1_phase2,train_flag)
+      #CBL_left_center_small_1_03 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      CBL_left_center_small_1_03 = self.CBL_left_center_small_1_03(CBL_small_03,train_flag)
 
-      #prob info
+      #CBL_left_center_small_2_03 in :  20 x 20 x 512 out :  20 x 20 x 1024
+      CBL_left_center_small_2_03 = self.CBL_left_center_small_2_03(CBL_left_center_small_1_03,train_flag)
 
-      #CBL_prob_class_1_03 
-      CBL_prob_class_small_1_08 = self.CBL_prob_class_small_1(CBL_small_08,train_flag)
+      #conv_pos_info_small_03 in : 20 x 20 x 1024 out : 20 x 20 x 4
+      conv_pos_info_small_03 = self.conv_pos_info_small_03(CBL_left_center_small_2_03)
 
-      #CBL_prob_class_2 in : 80 x 80 x 256 out : 80 x 80 x 256
-      CBL_prob_class_small_2_08 = self.CBL_prob_class_small_2(CBL_prob_class_small_1_08,train_flag)
+      #concat conv_prob_small -- conv_pos_info_small -- conv_class_small , out: 20 x 20 x 85
+      output_small_03 = tf.keras.layers.concatenate(inputs=[conv_prob_small_03,conv_pos_info_small_03,conv_class_small_03],axis=-1,name="output_small03")
 
-      #CBL_prob_small 
-      conv_prob_small_08 = self.conv_prob_small(CBL_prob_class_small_2_08)
+      #-------- 0.3 --------- #
 
-      #CBL_class_small 
-      conv_class_small_08 = self.conv_class_small(CBL_prob_class_small_2_08)
-
-      #reg info
+      #-------- 1.0 --------- #
       
-      #CBL_left_center_small_1_03
-      CBL_left_center_small_1_08 = self.CBL_left_center_small_1(CBL_small_08,train_flag)
-
-      #CBL_left_center_small_2_03
-      CBL_left_center_small_2_08 = self.CBL_left_center_small_2(CBL_left_center_small_1_08,train_flag)
-
-      #conv_pos_info_small
-      conv_pos_info_small_08 = self.conv_pos_info_small(CBL_left_center_small_2_08)
-
-      #concat conv_prob_small -- conv_pos_info_small -- conv_class_small , out: 80 x 80 x 85
-      output_small_08 = tf.keras.layers.concatenate(inputs=[conv_prob_small_08,conv_pos_info_small_08,conv_class_small_08],axis=-1,name="output_small_08")
-
-      
-      ########################### auxiliary output small 0.8 #################################
-
-
-
-      ########################### auxiliary output small 0.3 #################################
-      
-      #auxiliary output 0.3
-      CBL_small_03 = self.CBL_small(TCBL_connect_branch_1,train_flag)
-
-      #prob info
-
-      #CBL_prob_class_1_03 
-      CBL_prob_class_small_1_03 = self.CBL_prob_class_small_1(CBL_small_03,train_flag)
-
-      #CBL_prob_class_2 in : 80 x 80 x 256 out : 80 x 80 x 256
-      CBL_prob_class_small_2_03 = self.CBL_prob_class_small_2(CBL_prob_class_small_1_03,train_flag)
-
-      #CBL_prob_small 
-      conv_prob_small_03 = self.conv_prob_small(CBL_prob_class_small_2_03)
-
-      #CBL_class_small 
-      conv_class_small_03 = self.conv_class_small(CBL_prob_class_small_2_03)
-
-      #reg info
-      
-      #CBL_left_center_small_1_03
-      CBL_left_center_small_1_03 = self.CBL_left_center_small_1(CBL_small_03,train_flag)
-
-      #CBL_left_center_small_2_03
-      CBL_left_center_small_2_03 = self.CBL_left_center_small_2(CBL_left_center_small_1_03,train_flag)
-
-      #conv_pos_info_small
-      conv_pos_info_small_03 = self.conv_pos_info_small(CBL_left_center_small_2_03)
-
-      #concat conv_prob_small -- conv_pos_info_small -- conv_class_small , out: 80 x 80 x 85
-      output_small_03 = tf.keras.layers.concatenate(inputs=[conv_prob_small_03,conv_pos_info_small_03,conv_class_small_03],axis=-1,name="output_small_03")
-
-      
-      ########################### auxiliary output small 0.3 #################################
-
-      #CBL_small 1.0
+      #CBL_small
       CBL_small = self.CBL_small(CBL_5_phase2_branch_5,train_flag)
-      
+
       #prob info
 
       #CBL_prob_class_1 
@@ -689,6 +897,8 @@ class alpha_model(tf.keras.Model):
       #concat conv_prob_small -- conv_pos_info_small -- conv_class_small , out: 80 x 80 x 85
       output_small = tf.keras.layers.concatenate(inputs=[conv_prob_small,conv_pos_info_small,conv_class_small],axis=-1,name="output_small")
 
+      #-------- 1.0 --------- #
+
       #$#$#$#$#$#$#$#$#$#$#$#$#$# small output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CBL_connect_branch_5
@@ -715,79 +925,82 @@ class alpha_model(tf.keras.Model):
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$# medium output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
-      ########################### auxiliary output medium 0.8 #################################
-      
-      #auxiliary output 0.8
-      CBL_medium_08 = self.CBL_medium(CBL_1_phase3,train_flag)
+      #-------- 0.8 --------- #
+
+      #CBL_medium_0.8 
+      CBL_medium_08 = self.CBL_medium_08(CBL_1_phase3,train_flag)
+
+      #prob info 0.8
 
       #CBL_prob_class_medium_1 
-      CBL_prob_class_medium_1_08 = self.CBL_prob_class_medium_1(CBL_medium_08,train_flag)
+      CBL_prob_class_medium_1_08 = self.CBL_prob_class_medium_1_08(CBL_medium_08,train_flag)
 
-      #CBL_prob_class_medium_2
-      CBL_prob_class_medium_2_08 = self.CBL_prob_class_medium_2(CBL_prob_class_medium_1_08,train_flag)
+      #CBL_prob_class_medium_2 
+      CBL_prob_class_medium_2_08 = self.CBL_prob_class_medium_2_08(CBL_prob_class_medium_1_08,train_flag)
 
       #conv_prob_medium 
-      conv_prob_medium_08 = self.conv_prob_medium(CBL_prob_class_medium_2_08)
+      conv_prob_medium_08 = self.conv_prob_medium_08(CBL_prob_class_medium_2_08)
 
       #conv_class_medium 
-      conv_class_medium_08 = self.conv_class_medium(CBL_prob_class_medium_2_08)
+      conv_class_medium_08 = self.conv_class_medium_08(CBL_prob_class_medium_2_08)
 
 
-      #Reg info
+      #Reg info 0.8
       
-      #CBL_left_center_medium_1 
-      CBL_left_center_medium_1_08 = self.CBL_left_center_medium_1(CBL_medium_08,train_flag)
+      #CBL_left_center_medium_1_08 
+      CBL_left_center_medium_1_08 = self.CBL_left_center_medium_1_08(CBL_medium_08,train_flag)
 
-      #CBL_left_center_medium_2 
-      CBL_left_center_medium_2_08 = self.CBL_left_center_medium_2(CBL_left_center_medium_1_08,train_flag)
+      #CBL_left_center_medium_2_08 
+      CBL_left_center_medium_2_08 = self.CBL_left_center_medium_2_08(CBL_left_center_medium_1_08,train_flag)
 
-      #conv_pos_info_medium 
-      conv_pos_info_medium_08 = self.conv_pos_info_medium(CBL_left_center_medium_2_08)
+      #conv_pos_info_medium_08 
+      conv_pos_info_medium_08 = self.conv_pos_info_medium_08(CBL_left_center_medium_2_08)
 
-      #concat conv_prob_medium -- conv_pos_info_medium -- conv_class_medium , out: 40 x 40 x 85
-      output_medium_08 = tf.keras.layers.concatenate(inputs=[conv_prob_medium_08,conv_pos_info_medium_08,conv_class_medium_08],axis=-1,name="output_medium_08")
+      #concat conv_prob_medium -- conv_pos_info_medium -- conv_class_medium 
+      output_medium_08 = tf.keras.layers.concatenate(inputs=[conv_prob_medium_08,conv_pos_info_medium_08,conv_class_medium_08],axis=-1,name="output_medium08")
 
-      
-      ########################### auxiliary output medium 0.8 #################################
-      
+      #-------- 0.8 --------- #
 
+      #-------- 0.3 --------- #
 
-      ########################### auxiliary output medium 0.3 #################################
-      
-      #auxiliary output 0.3
-      CBL_medium_03 = self.CBL_medium(TCBL_connect_branch_2,train_flag)
+      #CBL_medium_0.3 
+      CBL_medium_03 = self.CBL_medium_03(TCBL_connect_branch_2,train_flag)
+
+      #prob info 0.3
 
       #CBL_prob_class_medium_1 
-      CBL_prob_class_medium_1_03 = self.CBL_prob_class_medium_1(CBL_medium_03,train_flag)
+      CBL_prob_class_medium_1_03 = self.CBL_prob_class_medium_1_03(CBL_medium_03,train_flag)
 
-      #CBL_prob_class_medium_2
-      CBL_prob_class_medium_2_03 = self.CBL_prob_class_medium_2(CBL_prob_class_medium_1_03,train_flag)
+      #CBL_prob_class_medium_2 
+      CBL_prob_class_medium_2_03 = self.CBL_prob_class_medium_2_03(CBL_prob_class_medium_1_03,train_flag)
 
       #conv_prob_medium 
-      conv_prob_medium_03 = self.conv_prob_medium(CBL_prob_class_medium_2_03)
+      conv_prob_medium_03 = self.conv_prob_medium_03(CBL_prob_class_medium_2_03)
 
       #conv_class_medium 
-      conv_class_medium_03 = self.conv_class_medium(CBL_prob_class_medium_2_03)
+      conv_class_medium_03 = self.conv_class_medium_03(CBL_prob_class_medium_2_03)
 
 
-      #Reg info
+      #Reg info 0.3
       
-      #CBL_left_center_medium_1 
-      CBL_left_center_medium_1_03 = self.CBL_left_center_medium_1(CBL_medium_03,train_flag)
+      #CBL_left_center_medium_1_03 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      CBL_left_center_medium_1_03 = self.CBL_left_center_medium_1_03(CBL_medium_03,train_flag)
 
-      #CBL_left_center_medium_2 
-      CBL_left_center_medium_2_03 = self.CBL_left_center_medium_2(CBL_left_center_medium_1_03,train_flag)
+      #CBL_left_center_medium_2_03 in :  20 x 20 x 512 out :  20 x 20 x 1024
+      CBL_left_center_medium_2_03 = self.CBL_left_center_medium_2_03(CBL_left_center_medium_1_03,train_flag)
 
-      #conv_pos_info_medium 
-      conv_pos_info_medium_03 = self.conv_pos_info_medium(CBL_left_center_medium_2_03)
+      #conv_pos_info_medium_03 in : 20 x 20 x 1024 out : 20 x 20 x 4
+      conv_pos_info_medium_03 = self.conv_pos_info_medium_03(CBL_left_center_medium_2_03)
 
-      #concat conv_prob_medium -- conv_pos_info_medium -- conv_class_medium , out: 40 x 40 x 85
-      output_medium_03 = tf.keras.layers.concatenate(inputs=[conv_prob_medium_03,conv_pos_info_medium_03,conv_class_medium_03],axis=-1,name="output_medium_03")
+      #concat conv_prob_medium -- conv_pos_info_medium -- conv_class_medium , out: 20 x 20 x 85
+      output_medium_03 = tf.keras.layers.concatenate(inputs=[conv_prob_medium_03,conv_pos_info_medium_03,conv_class_medium_03],axis=-1,name="output_medium03")
+
+      #-------- 0.3 --------- #
 
       
-      ########################### auxiliary output medium 0.3 #################################
-
-      #CBL_medium 1.0
+      #-------- 1.0 --------- #
+      
+      #CBL_medium
       CBL_medium = self.CBL_medium(CBL_5_phase3_branch_6,train_flag)
 
       #prob info
@@ -819,19 +1032,18 @@ class alpha_model(tf.keras.Model):
       #concat conv_prob_medium -- conv_pos_info_medium -- conv_class_medium , out: 40 x 40 x 85
       output_medium = tf.keras.layers.concatenate(inputs=[conv_prob_medium,conv_pos_info_medium,conv_class_medium],axis=-1,name="output_medium")
 
-      #$#$#$#$#$#$#$#$#$#$#$#$#$# medium output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
+      #-------- 1.0 --------- #
 
-      #TCBL_connect_branch_3
-      TCBL_connect_branch_3 = self.TCBL_connect_branch_3(CBL_6_branch_3,train_flag)
+      #$#$#$#$#$#$#$#$#$#$#$#$#$# medium output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
       #CBL_connect_branch_6 
       CBL_connect_branch_6 = self.CBL_connect_branch_6(CBL_5_phase3_branch_6,train_flag)
 
-      #concat CBL_connect_branch_6 -- TCBL_connect_branch_3
-      concat_CBL_connect_branch_6_TCBL_connect_branch_3 = tf.keras.layers.concatenate(inputs=[CBL_connect_branch_6,TCBL_connect_branch_3],axis=-1)
+      #concat CBL_connect_branch_6 -- CBL_6_branch_3
+      concat_CBL_connect_branch_6_CBL_6_branch_3 = tf.keras.layers.concatenate(inputs=[CBL_connect_branch_6,CBL_6_branch_3],axis=-1)
 
       #CBL_1 phase4 
-      CBL_1_phase4 = self.CBL_1_phase4(concat_CBL_connect_branch_6_TCBL_connect_branch_3,train_flag)
+      CBL_1_phase4 = self.CBL_1_phase4(concat_CBL_connect_branch_6_CBL_6_branch_3,train_flag)
 
       #CBL_2 phase4 
       CBL_2_phase4 = self.CBL_2_phase4(CBL_1_phase4,train_flag)
@@ -846,82 +1058,82 @@ class alpha_model(tf.keras.Model):
       CBL_5_phase4 = self.CBL_5_phase4(CBL_4_phase4,train_flag)
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$# large output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
-      
 
-      ########################### auxiliary output large 0.8 #################################
+      #-------- 0.8 --------- #
 
+      #CBL_large_0.8 
+      CBL_large_08 = self.CBL_large_08(CBL_1_phase4,train_flag)
 
-      #auxiliary output 0.8
-      CBL_large_08 = self.CBL_large(CBL_1_phase4,train_flag)
-
-      #CBL_prob_class_large_1 
-      CBL_prob_class_large_1_08 = self.CBL_prob_class_large_1(CBL_large_08,train_flag)
-
-      #CBL_prob_class_large_2
-      CBL_prob_class_large_2_08 = self.CBL_prob_class_large_2(CBL_prob_class_large_1_08,train_flag)
-
-      #conv_prob_large 
-      conv_prob_large_08 = self.conv_prob_large(CBL_prob_class_large_2_08)
-
-      #conv_class_large 
-      conv_class_large_08 = self.conv_class_large(CBL_prob_class_large_2_08)
-
-      #Reg info
-      
-      #CBL_left_center_large_1 
-      CBL_left_center_large_1_08 = self.CBL_left_center_large_1(CBL_large_08,train_flag)
-
-      #CBL_left_center_large_2 
-      CBL_left_center_large_2_08 = self.CBL_left_center_large_2(CBL_left_center_large_1_08,train_flag)
-
-      #conv_pos_info_large 
-      conv_pos_info_large_08 = self.conv_pos_info_large(CBL_left_center_large_2_08) 
-
-      #concat conv_prob_large -- conv_pos_info_large -- conv_class_large , out: 20 x 20 x 85
-      output_large_08 = tf.keras.layers.concatenate(inputs=[conv_prob_large_08,conv_pos_info_large_08,conv_class_large_08],axis=-1,name="output_large_08")
-
-      
-      ########################### auxiliary output large 0.8 #################################
-      
-
-
-      ########################### auxiliary output large 0.3 #################################
-
-      TCBL_connect_REX4 = self.TCBL_connect_REX4(CSPX_4,train_flag)
-
-      #auxiliary output 0.3
-      CBL_large_03 = self.CBL_large(TCBL_connect_REX4,train_flag)
+      #prob info 0.8
 
       #CBL_prob_class_large_1 
-      CBL_prob_class_large_1_03 = self.CBL_prob_class_large_1(CBL_large_03,train_flag)
+      CBL_prob_class_large_1_08 = self.CBL_prob_class_large_1_08(CBL_large_08,train_flag)
 
-      #CBL_prob_class_large_2
-      CBL_prob_class_large_2_03 = self.CBL_prob_class_large_2(CBL_prob_class_large_1_03,train_flag)
+      #CBL_prob_class_large_2 
+      CBL_prob_class_large_2_08 = self.CBL_prob_class_large_2_08(CBL_prob_class_large_1_08,train_flag)
 
       #conv_prob_large 
-      conv_prob_large_03 = self.conv_prob_large(CBL_prob_class_large_2_03)
+      conv_prob_large_08 = self.conv_prob_large_08(CBL_prob_class_large_2_08)
 
       #conv_class_large 
-      conv_class_large_03 = self.conv_class_large(CBL_prob_class_large_2_03)
+      conv_class_large_08 = self.conv_class_large_08(CBL_prob_class_large_2_08)
 
-      #Reg info
+
+      #Reg info 0.8
       
-      #CBL_left_center_large_1 
-      CBL_left_center_large_1_03 = self.CBL_left_center_large_1(CBL_large_03,train_flag)
+      #CBL_left_center_large_1_08 
+      CBL_left_center_large_1_08 = self.CBL_left_center_large_1_08(CBL_large_08,train_flag)
 
-      #CBL_left_center_large_2 
-      CBL_left_center_large_2_03 = self.CBL_left_center_large_2(CBL_left_center_large_1_03,train_flag)
+      #CBL_left_center_large_2_08 
+      CBL_left_center_large_2_08 = self.CBL_left_center_large_2_08(CBL_left_center_large_1_08,train_flag)
 
-      #conv_pos_info_large 
-      conv_pos_info_large_03 = self.conv_pos_info_large(CBL_left_center_large_2_03) 
+      #conv_pos_info_large_08 
+      conv_pos_info_large_08 = self.conv_pos_info_large_08(CBL_left_center_large_2_08)
+
+      #concat conv_prob_large -- conv_pos_info_large -- conv_class_large 
+      output_large_08 = tf.keras.layers.concatenate(inputs=[conv_prob_large_08,conv_pos_info_large_08,conv_class_large_08],axis=-1,name="output_large08")
+
+      #-------- 0.8 --------- #
+
+      #-------- 0.3 --------- #
+
+      #CBL_large_0.3 in : 20 x 20 x 1024 out : 20 x 20 x 1024
+      CBL_large_03 = self.CBL_large_03(TCBL_CSPX4,train_flag)
+
+      #prob info 0.3
+
+      #CBL_prob_class_large_1 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      CBL_prob_class_large_1_03 = self.CBL_prob_class_large_1_03(CBL_large_03,train_flag)
+
+      #CBL_prob_class_large_2 in : 20 x 20 x 512 out : 20 x 20 x 1024
+      CBL_prob_class_large_2_03 = self.CBL_prob_class_large_2_03(CBL_prob_class_large_1_03,train_flag)
+
+      #conv_prob_large in : 20 x 20 x 1024 out : 20 x 20 x 1
+      conv_prob_large_03 = self.conv_prob_large_03(CBL_prob_class_large_2_03)
+
+      #conv_class_large in : 20 x 20 x 1024 out : 20 x 20 x 20
+      conv_class_large_03 = self.conv_class_large_03(CBL_prob_class_large_2_03)
+
+
+      #Reg info 0.3
+      
+      #CBL_left_center_large_1_03 in : 20 x 20 x 1024 out : 20 x 20 x 512
+      CBL_left_center_large_1_03 = self.CBL_left_center_large_1_03(CBL_large_03,train_flag)
+
+      #CBL_left_center_large_2_03 in :  20 x 20 x 512 out :  20 x 20 x 1024
+      CBL_left_center_large_2_03 = self.CBL_left_center_large_2_03(CBL_left_center_large_1_03,train_flag)
+
+      #conv_pos_info_large_03 in : 20 x 20 x 1024 out : 20 x 20 x 4
+      conv_pos_info_large_03 = self.conv_pos_info_large_03(CBL_left_center_large_2_03)
 
       #concat conv_prob_large -- conv_pos_info_large -- conv_class_large , out: 20 x 20 x 85
-      output_large_03 = tf.keras.layers.concatenate(inputs=[conv_prob_large_03,conv_pos_info_large_03,conv_class_large_03],axis=-1,name="output_large_03")
+      output_large_03 = tf.keras.layers.concatenate(inputs=[conv_prob_large_03,conv_pos_info_large_03,conv_class_large_03],axis=-1,name="output_large03")
 
+      #-------- 0.3 --------- #
+
+      #-------- 1.0 --------- #
       
-      ########################### auxiliary output large 0.3 #################################
-
-      #CBL_large 1.0
+      #CBL_large 
       CBL_large = self.CBL_large(CBL_5_phase4,train_flag)
 
       #prob info
@@ -951,6 +1163,8 @@ class alpha_model(tf.keras.Model):
 
       #concat conv_prob_large -- conv_pos_info_large -- conv_class_large , out: 20 x 20 x 85
       output_large = tf.keras.layers.concatenate(inputs=[conv_prob_large,conv_pos_info_large,conv_class_large],axis=-1,name="output_large")
+
+      #-------- 1.0 --------- #
 
       #$#$#$#$#$#$#$#$#$#$#$#$#$# large output $#$#$#$#$#$#$#$#$#$#$#$#$#$#$#$
 
