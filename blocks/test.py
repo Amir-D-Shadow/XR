@@ -306,7 +306,21 @@ if __name__ == "__main__":
 
    losses  = tf.keras.losses.CategoricalCrossentropy(from_logits=True,axis=-1,reduction=tf.keras.losses.Reduction.NONE)(y_true,y_pred)
    """
-
+   """
    a = tf.constant(np.random.randn(10,3,3,20))
 
    b = tf.keras.layers.Dense(64)(a)
+   """
+   n = 10
+   images = np.random.randn(8,10,10,6)#np.array([[[[x * n + y + 1] for y in range(n)] for x in range(n)]])
+
+   y = tf.image.extract_patches(images=images,
+                           sizes=[1, 3, 3, 1],
+                           strides=[1, 1, 1, 1],
+                           rates=[1, 1, 1, 1],
+                           padding='SAME')
+
+   a = np.random.randn(5,10,10,9,8,2)
+   b = np.random.randn(5,10,10,9,1,2)
+   c = tf.multiply(b,a)
+   
