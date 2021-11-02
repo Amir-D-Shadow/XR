@@ -8,7 +8,7 @@ import json
 import cv2
 import os
 import time
-import alpha
+from alpha_simplebasic_CSP import alpha_model
 
 
 @tf.function
@@ -50,7 +50,7 @@ def get_image_generator(batch_size,image_path,standard_shape=(640,640)):
          img = cv2.imread(f"{image_path}/{name}").astype(np.float64)
 
          #pad image
-         img = preprocess_image(img,standard_shape)
+         img = preprocess_data.preprocess_image(img,standard_shape)
 
          #save img
          img_data.append(img)
@@ -146,7 +146,7 @@ def draw_box_based_on_feat(img,selected_object,reversed_class_map,class_color_ma
       feat = [class_idx,obj[1][1],obj[1][2],obj[1][3],obj[1][4],obj[0],obj[-1]]
 
       #draw box
-      img = draw_anchor_box(img,feat,reversed_class_map,class_color_map)
+      img = draw.draw_anchor_box(img,feat,reversed_class_map,class_color_map)
 
 
    return img
@@ -294,27 +294,35 @@ if __name__ == "__main__":
    import time
    path = os.getcwd()
 
-   data_path =  f"{path}/gdrive/MyDrive/data"
+   data_path =  f"{path}/data"
 
+   class_info = preprocess_data.preprocess_class(f"{path}/annotations/train_annotations.csv",data_path)
+
+   """
    #get class info
    file = open(f"{data_path}/class_map.txt")
    class_info = json.load(file)
    file.close()
+   """
+   
+   class_color_map = preprocess_data.preprocess_class_color_map(class_info,data_path)
+   reversed_class_info = preprocess_data.reverse_class_info(class_info,data_path)
 
-   class_color_map = preprocess_class_color_map(class_info,data_path)
-   reversed_class_info = reverse_class_info(class_info,data_path)
 
-
-   model_path = f"{path}/gdrive/MyDrive/model_weights"
-   image_path = f"{path}/gdrive/MyDrive/pending_to_analysis"
-   result_path = f"{path}/gdrive/MyDrive/result"
+   model_path = f"{path}/base_model_weights"
+   image_path = f"{path}/pending_to_analysis"
+   result_path = f"{path}/result"
 
    model = load_model(model_path)
 
    start = time.time()
-   for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.25,diou_threshold=0.4,batch_size=4):
+   one_device = tf.distribute.OneDeviceStrategy(device="GPU:0")
+   
+   with one_device.scope():
+      
+      for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.7,diou_threshold=0.5,batch_size=4):
 
-     print(f"FPS: {1/(time.time()-start)}")
-     start = time.time()
+        print(f"FPS: {1/(time.time()-start)}")
+        start = time.time()
     
 
