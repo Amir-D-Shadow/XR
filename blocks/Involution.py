@@ -4,7 +4,7 @@ from CBL import CBL
 
 class Involution(tf.keras.layers.Layer):
 
-   def __init__(self,filters,kernel_size,strides,group_number=1,rates=1,**kwargs):
+   def __init__(self,filters,kernel_size,strides,group_number=1,**kwargs):
 
 
       super(Involution,self).__init__(**kwargs)
@@ -14,7 +14,6 @@ class Involution(tf.keras.layers.Layer):
       self.kernel_size = kernel_size
       self.strides = strides
       self.group_number = group_number
-      self.rates = rates
 
 
    def build(self,input_shape):
@@ -32,7 +31,7 @@ class Involution(tf.keras.layers.Layer):
       self.CBL_KG_p1 = CBL(self.filters,1,1,"same")
 
       #from (m,H,W,filter) to (m,H,W,K*K*G) [G:group_number]
-      self.CONV_KG_p2 = tf.keras.layers.Conv2D(filters=self.kernel_size*self.kernel_size*self.group_number,kernel_size=3,strides=1,padding="same",data_format="channels_last") #CBL(self.kernel_size*self.kernel_size*self.group_number,1,1,"same")
+      self.CONV_KG_p2 = tf.keras.layers.Conv2D(filters=self.kernel_size*self.kernel_size*self.group_number,kernel_size=self.kernel_size,strides=self.strides,padding="same",data_format="channels_last") #CBL(self.kernel_size*self.kernel_size*self.group_number,1,1,"same")
 
       #reshape for kernel (m,H,W,K*K*C) --> (m,H,W,K*K,C) 
       self.input_reshape_for_kernel = tf.keras.layers.Reshape(target_shape=(H,W,self.kernel_size * self.kernel_size,C))
@@ -50,7 +49,7 @@ class Involution(tf.keras.layers.Layer):
       self.output_reshape = tf.keras.layers.Reshape(target_shape=(H,W,C))
 
       #BN_out
-      self.BN_out = tf.keras.layers.BatchNormalization(axis=-1) #tf.keras.layers.LayerNormalization(axis=[1, 2, 3]) 
+      self.LN_out = tf.keras.layers.LayerNormalization(axis=[1, 2]) #tf.keras.layers.BatchNormalization(axis=-1) 
 
       #act_out
       self.act_out = tf.keras.layers.LeakyReLU()
@@ -58,7 +57,7 @@ class Involution(tf.keras.layers.Layer):
    def call(self,inputs,train_flag=True):
 
       #(m,H,W,K*K*C)
-      feat_patch = tf.image.extract_patches(inputs,sizes=[1,self.kernel_size,self.kernel_size,1],strides=[1,self.strides,self.strides,1],rates=[1,self.rates,self.rates,1],padding="SAME")
+      feat_patch = tf.image.extract_patches(inputs,sizes=[1,self.kernel_size,self.kernel_size,1],strides=[1,self.strides,self.strides,1],rates=[1,1,1,1],padding="SAME")
 
       #get kernel
 
@@ -91,7 +90,7 @@ class Involution(tf.keras.layers.Layer):
       feat_out = self.output_reshape(feat_out)
 
       #BN_out
-      feat_out = self.BN_out(feat_out,training=train_flag)
+      feat_out = self.LN_out(feat_out,training=train_flag)
 
       #activate
       feat_out = self.act_out(feat_out)
