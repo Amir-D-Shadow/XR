@@ -11,7 +11,7 @@ import data_augment
 from Kmean import Kmean_IOU
 
 #generator
-def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),aug_flag=False):
+def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),aug_flag=False,mul_pos=True):
 
    """
    #img_shape -- (height,width)
@@ -46,7 +46,7 @@ def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),au
       img_data = get_image_data(name_list,img_path,img_shape,aug_flag)
 
       #get y_true data -- tuple (np.array,np.array,np.array)
-      label = get_y_true(name_list,img_info,class_info,img_shape)
+      label = get_y_true(name_list,img_info,class_info,mul_pos,img_shape)
 
       #update remaining sample
       m = m - batch_size
@@ -86,7 +86,7 @@ def get_image_data(name_list,img_path,img_shape=(640,640),aug_flag=False):
    return img_data
 
 
-def get_y_true(name_list,img_info,class_info,img_shape = (640,640)):
+def get_y_true(name_list,img_info,class_info,mul_pos=True,img_shape = (640,640)):
 
    """
    name_list -- list
@@ -104,10 +104,14 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640)):
 
 
       #initialize y_true extra dim will be removed when it is saved (it is used for overlap region checking)
+      """
       obj_small_true = np.zeros((80,80,85))
       obj_medium_true = np.zeros((40,40,85))
       obj_large_true = np.zeros((20,20,85))
-
+      """
+      obj_small_true = np.zeros((80,80,25))
+      obj_medium_true = np.zeros((40,40,25))
+      obj_large_true = np.zeros((20,20,25))
       #obj_small_true = np.zeros((16,16,91))
       #obj_medium_true = np.zeros((8,8,91))
       #obj_large_true = np.zeros((4,4,91))
@@ -130,7 +134,7 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640)):
       cluster_idx = Kmean_IOU(bbox_hw)
       
       #update y_true
-      obj_small_true,obj_medium_true,obj_large_true = update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640))
+      obj_small_true,obj_medium_true,obj_large_true = update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true,obj_large_true,mul_pos,img_shape = (640,640))
       
       #save image info
       small_true.append(obj_small_true[:,:,:])
@@ -145,7 +149,7 @@ def get_y_true(name_list,img_info,class_info,img_shape = (640,640)):
    return (large_true,medium_true,small_true)
 
    
-def update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true,obj_large_true,img_shape = (640,640)):
+def update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true,obj_large_true,mul_pos=True,img_shape = (640,640)):
 
    """
    obj -- list [class,xmin,ymin,xcenter,ycenter]
@@ -201,7 +205,9 @@ def update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true
       obj_large_true[h_pos,w_pos,5+class_id] = 1
 
       #multiple positive
-      obj_large_true = multiple_positive_labeling(obj_large_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
+      if mul_pos:
+         
+         obj_large_true = multiple_positive_labeling(obj_large_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
 
 
    #update medium obj
@@ -237,7 +243,9 @@ def update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true
       obj_medium_true[h_pos,w_pos,5+class_id] = 1
 
       #multiple positive
-      obj_medium_true = multiple_positive_labeling(obj_medium_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
+      if mul_pos:
+         
+         obj_medium_true = multiple_positive_labeling(obj_medium_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
 
 
    #update small obj
@@ -274,7 +282,9 @@ def update_y_true(obj_info,class_info,cluster_idx,obj_small_true,obj_medium_true
 
 
       #multiple positive
-      obj_small_true = multiple_positive_labeling(obj_small_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
+      if mul_pos:
+         
+         obj_small_true = multiple_positive_labeling(obj_small_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycenter,step_w,step_h)
                  
    return obj_small_true,obj_medium_true,obj_large_true
 
@@ -304,7 +314,7 @@ def multiple_positive_labeling(y_true,class_id,xmin,ymin,xmax,ymax,xcenter,ycent
 
       for h_pos in range(h_pos_init,h_max):
 
-         if (n >= 9):
+         if (n >= 5):
 
             break
 

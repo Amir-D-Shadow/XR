@@ -311,6 +311,8 @@ if __name__ == "__main__":
 
    b = tf.keras.layers.Dense(64)(a)
    """
+
+   """
    n = 10
    images = np.random.randn(8,10,10,6)#np.array([[[[x * n + y + 1] for y in range(n)] for x in range(n)]])
 
@@ -323,4 +325,53 @@ if __name__ == "__main__":
    a = np.random.randn(5,10,10,9,8,2)
    b = np.random.randn(5,10,10,9,1,2)
    c = tf.multiply(b,a)
+   """
+   """
+   a = np.random.randn(16,80,80,25)
+   #a = np.random.randint(low=0,high=2,size=2560000).reshape(16,80,80,25).astype(np.float64)
+   c = a[a[:,:,:,0]>0]
+   """
+   y_true = np.random.randn(2,16,16,25)
+   y_pred = np.random.randn(2,16,16,25)
+
+   #(n,c)
+   obj_true = y_true[y_true[:,:,:,0]>0]
+   #(1,n,c)
+   obj_true = obj_true[np.newaxis,:,:]
+
+   #(m,h,w,1,c)
+   obj_pred = (y_pred.copy())[:,:,:,np.newaxis,:]
+
+   #left right pred (m,h,w,1,2)
+   left_pred = obj_pred[:,:,:,:,1:3]
+   wh_pred = (obj_pred[:,:,:,:,3:5] - left_pred)*2
+   right_pred = wh_pred + left_pred
+   
+   #left true (1,n,2)
+   left_true = obj_true[:,:,1:3]
+   wh_true = (obj_true[:,:,3:5] - left_true) * 2
+   right_true = wh_true + left_true
+
+   #intersection xy (m,h,w,n,2)
+   inter_left = np.maximum(left_pred,left_true)
+   
+   inter_right = np.minimum(right_pred,right_true)
+   inter_right = np.maximum(inter_right,inter_left)
+
+   #inter wh (m,h,w,n,2)
+   inter_wh = inter_right - inter_left
+
+   #inter area (m,h,w,n)
+   inter_area = inter_wh[:,:,:,:,0] * inter_wh[:,:,:,:,1]
+
+   #union (m,h,w,n)
+   union_area = wh_pred[:,:,:,:,0] * wh_pred[:,:,:,:,1] + wh_true[:,:,0] * wh_true[:,:,1] - inter_area
+
+   #iou (m,h,w,n)
+   iou_val = inter_area / ( union_area + 1e-7 )
+
+   #max iou (m,h,w)
+   iou_val = np.max(iou_val,axis=-1,keepdims=False)
+   
+   
    
