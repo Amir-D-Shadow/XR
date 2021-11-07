@@ -66,7 +66,7 @@ def mAP(model_path,image_path,img_info_path,class_info_path,batch_size=4,confide
 
    return mAP_output
 
-#@jit(nopython=True)         
+@jit(nopython=True)         
 def get_precision_recall(y_true,y_pred,confidence_threshold=0.7,iou_threshold=0.5):
 
    """
@@ -109,7 +109,7 @@ def get_precision_recall(y_true,y_pred,confidence_threshold=0.7,iou_threshold=0.
    
    return [precision,recall]
    
-"""
+
 @jit(nopython=True)
 def IOU_mAP(feat_1,feat_2):
 
@@ -152,8 +152,8 @@ def IOU_mAP(feat_1,feat_2):
 
    return iou_val
 
+
 """
-   
 #@jit(nopython=True)
 def IOU_mAP(y_true,y_pred):
 
@@ -206,7 +206,7 @@ def IOU_mAP(y_true,y_pred):
    iou_val = np.max(iou_val,axis=-1,keepdims=False)
 
    return iou_val
-
+"""
 
 @jit(nopython=True)
 def AUC_for_mAP(pr_val):
@@ -246,5 +246,5 @@ if __name__ == "__main__":
    model_path = f"{path}/base_model_weights"
    image_path = f"{path}/pending_to_analysis"
 
-   mAP_val = mAP(model_path,image_path,gt_path,class_info_path,batch_size=1,confidence_threshold=0.5,iou_threshold=0.5)
+   mAP_val = mAP(model_path,image_path,gt_path,class_info_path,batch_size=4,confidence_threshold=0.5,iou_threshold=0.5)
    
