@@ -320,7 +320,7 @@ if __name__ == "__main__":
    
    with one_device.scope():
       
-      for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.7,diou_threshold=0.5,batch_size=4):
+      for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.6,diou_threshold=0.5,batch_size=4):
 
         print(f"FPS: {1/(time.time()-start)}")
         start = time.time()

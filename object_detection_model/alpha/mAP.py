@@ -6,6 +6,7 @@ from generate_data import get_gt_data
 import json
 from predict import step_predict,load_model
 import preprocess_data
+import matplotlib.pyplot as plt
 
 def mAP(model_path,image_path,img_info_path,class_info_path,batch_size=4,confidence_threshold=0.7,iou_threshold=0.5):
 
@@ -60,6 +61,12 @@ def mAP(model_path,image_path,img_info_path,class_info_path,batch_size=4,confide
 
    #convert to array
    mAP_output = np.array(mAP_output)
+
+   #save plot
+   plt.scatter(mAP_output[:,1],mAP_output[:,0])
+   plt.ylabel("precision")
+   plt.xlabel("recall")
+   plt.savefig(f"{os.getcwd()}/mAP_plot.png")
 
    #Area under curve by trapz
    mAP_output = AUC_for_mAP(mAP_output)#np.trapz(y=mAP_output[:,0],x=mAP_output[:,1])
