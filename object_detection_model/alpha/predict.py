@@ -8,7 +8,8 @@ import json
 import cv2
 import os
 import time
-from alpha_simplebasic_CSP import alpha_model
+#from alpha_simplebasic_CSP import alpha_model
+from alpha_aux import alpha_model
 
 
 @tf.function
@@ -309,7 +310,8 @@ if __name__ == "__main__":
    reversed_class_info = preprocess_data.reverse_class_info(class_info,data_path)
 
 
-   model_path = f"{path}/base_model_weights"
+   #model_path = f"{path}/base_model_weights"
+   model_path = f"{path}/aux_model_weights"
    image_path = f"{path}/pending_to_analysis"
    result_path = f"{path}/result"
 
@@ -320,7 +322,7 @@ if __name__ == "__main__":
    
    with one_device.scope():
       
-      for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.6,diou_threshold=0.5,batch_size=4):
+      for y in predict(model,image_path,result_path,reversed_class_info,class_color_map,confidence_threshold=0.65,diou_threshold=0.35,batch_size=1):
 
         print(f"FPS: {1/(time.time()-start)}")
         start = time.time()

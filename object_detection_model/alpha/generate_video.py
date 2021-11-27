@@ -1,7 +1,8 @@
 import tensorflow as tf
 import cv2
 import os
-from alpha_simplebasic_CSP import alpha_model
+#from alpha_simplebasic_CSP import alpha_model
+from alpha_aux import alpha_model
 import preprocess_data
 import draw
 from numba import jit
@@ -249,7 +250,8 @@ if __name__ == "__main__":
 
    one_device = tf.distribute.OneDeviceStrategy(device="GPU:0")
 
-   model_path = f"{path}/base_model_weights"
+   #model_path = f"{path}/base_model_weights"
+   model_path = f"{path}/aux_model_weights"
    model = load_model(model_path)
 
 
@@ -289,7 +291,7 @@ if __name__ == "__main__":
 
        with one_device.scope():
           
-          frame = process_frame(model,frame,reversed_class_info,class_color_map,confidence_threshold=0.6,diou_threshold=0.5)
+          frame = process_frame(model,frame,reversed_class_info,class_color_map,confidence_threshold=0.65,diou_threshold=0.5)
 
        #frame = cv2.cvtColor(frame,cv2.COLOR_RGB2BGR)
       
