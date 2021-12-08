@@ -8,8 +8,8 @@ import json
 import cv2
 import os
 import time
-#from alpha_simplebasic_CSP import alpha_model
-from alpha_aux import alpha_model
+from alpha_simplebasic_CSP import alpha_model
+#from alpha_aux import alpha_model
 
 
 @tf.function
@@ -310,8 +310,8 @@ if __name__ == "__main__":
    reversed_class_info = preprocess_data.reverse_class_info(class_info,data_path)
 
 
-   #model_path = f"{path}/base_model_weights"
-   model_path = f"{path}/aux_model_weights"
+   model_path = f"{path}/base_model_weights"
+   #model_path = f"{path}/aux_model_weights"
    image_path = f"{path}/pending_to_analysis"
    result_path = f"{path}/result"
 

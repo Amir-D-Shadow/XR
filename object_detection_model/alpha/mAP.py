@@ -250,8 +250,8 @@ if __name__ == "__main__":
    gt_dataset = preprocess_data.preprocessing_label(f"{path}/annotations/valid_annotations.csv",data_path)
    gt_path = f"{data_path}/gt_dataset.txt"
 
-   #model_path = f"{path}/base_model_weights"
-   model_path = f"{path}/aux_model_weights"
+   model_path = f"{path}/base_model_weights"
+   #model_path = f"{path}/aux_model_weights"
    image_path = f"{path}/pending_to_analysis"
 
    mAP_val = mAP(model_path,image_path,gt_path,class_info_path,batch_size=4,confidence_threshold=0.5,iou_threshold=0.5)

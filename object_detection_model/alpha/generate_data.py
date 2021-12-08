@@ -19,7 +19,7 @@ def get_gt_data(batch_size,img_info,class_info,img_path,img_shape = (640,640),au
    
    img_list_shuffled = list(img_info.keys())
    
-   random.shuffle(img_list_shuffled)
+   #random.shuffle(img_list_shuffled)
 
    m = len(img_list_shuffled)
 
